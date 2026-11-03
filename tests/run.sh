@@ -90,6 +90,10 @@ ctxt 175000; check "auto-notes: fires at 87%" 'an | jq -e ".reason | test(\"87%\
 ctxt 30000;  check "auto-notes: re-armed below 60% after compaction" '[ -z "$(an)" ] && [ "$(cat "$dir/.state/aaaaaaaa.auto-notes")" = 0 ]'
 ctxt 125000; check "auto-notes: fires again at 62%" 'an | jq -e ".decision == \"block\"" >/dev/null'
 rm -f "$dir/.state/aaaaaaaa.auto-notes"
+# First Stop of a session: the async writer has not made its file yet; the threshold stays open.
+G="99999999-7777-4777-8777-777777777777"
+ag="$(jq -nc --arg s "$G" --arg t "$T/ctx.jsonl" --arg c "$proj" '{session_id:$s, transcript_path:$t, cwd:$c}' | CLAUDE_HANDOFF_AUTO_NOTES=context CLAUDE_HANDOFF_CONTEXT_WINDOW=200000 "$S/auto-notes.sh")"
+check "auto-notes: no file yet -> quiet, threshold not used up" '[ -z "$ag" ] && [ ! -f "$dir/.state/99999999.auto-notes" ]'
 # Window derived from the transcript: a request above 200k means the 1M window.
 ctxt 300000; an1="$(jq -nc --arg s "$A" --arg t "$T/ctx.jsonl" --arg c "$proj" '{session_id:$s, transcript_path:$t, cwd:$c}' | CLAUDE_HANDOFF_AUTO_NOTES=context "$S/auto-notes.sh")"
 check "auto-notes: 300k request implies the 1M window (30%, quiet)" '[ -z "$an1" ]'

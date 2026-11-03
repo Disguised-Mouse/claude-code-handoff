@@ -55,13 +55,13 @@ if [ "$mode" = "context" ]; then
     mkdir -p "$(dirname "$state")" && printf '0' > "$state"
   fi
   [ -n "$hit" ] && [ "$hit" -gt "$last" ] || exit 0
-  mkdir -p "$(dirname "$state")" && printf '%s' "$hit" > "$state"
+  next="$hit"
   why="context at ${pct}% of the window, compaction is near"
 else
   count="$(jq -s -L "$HERE" 'include "scrub"; [ .[] | select(is_prompt) ] | length' "$transcript" 2>/dev/null)"
   [ "$count" -gt 0 ] 2>/dev/null || exit 0
   [ "$count" -ge $((last + n)) ] || exit 0
-  mkdir -p "$(dirname "$state")" && printf '%s' "$count" > "$state"
+  next="$count"
   why="every $n turns"
 fi
 
@@ -71,6 +71,9 @@ root="$(root_of_file "$file")"
 [ -n "$root" ] || exit 0
 notes="$(notes_sidecar "$dir" "$root")"
 [ -f "$notes" ] || notes_of "$file" > "$notes"
+# Recorded only now: on a session's first Stop the async writer may not have made the file yet,
+# and a threshold marked done without the request being sent would never fire again.
+mkdir -p "$(dirname "$state")" && printf '%s' "$next" > "$state"
 jq -nc --arg f "$notes" --arg w "$why" '{decision: "block",
   reason: ("Handoff plugin, notes update (" + $w + "): rewrite " + $f + " with current notes (Goal, Done, In progress, Decisions, Rejected, Open questions, Next action with file:line or the exact command, Next steps, Gotchas; under 60 lines; plain markdown, no marker lines, never secrets). The handoff file shows it on the next render. Then stop without further commentary.")}'
 exit 0

@@ -117,19 +117,28 @@ is_handoff_file() {
 # file_mtime <file> -> modification time as epoch seconds (BSD and GNU date both take -r)
 file_mtime() { date -r "$1" +%s 2>/dev/null || printf '0'; }
 
-# session_files <dir> -> handoff files, newest first by the updated_epoch each file carries
+# session_files <dir>... -> handoff files, newest first by the updated_epoch each file carries
 # (a copied or synced directory keeps that order; mtime is only the fallback). File names
 # come from title_slug, which strips whitespace and control characters, so one line is one
 # file; everything else (LATEST.md, the user's own markdown) is filtered out.
 session_files() {
-  local f ep
-  for f in "$1"/*.md; do
+  local d f ep
+  for d in "$@"; do for f in "$d"/*.md; do
     is_handoff_file "$f" || continue
     ep="$(epoch_of "$f")"
     case "$ep" in ''|*[!0-9]*|0) ep="$(file_mtime "$f")" ;; esac
     printf '%s\t%s\n' "$ep" "$f"
-  done 2>/dev/null | sort -t "$(printf '\t')" -k1,1nr -k2,2 | cut -f2-
+  done; done 2>/dev/null | sort -t "$(printf '\t')" -k1,1nr -k2,2 | cut -f2-
 }
+
+# all_project_dirs -> the per-project folders under ~/.claude/handoffs (the IN_PROJECT=false layout)
+all_project_dirs() {
+  local d
+  for d in "$HOME/.claude/handoffs"/*/; do [ -d "$d" ] && printf '%s\n' "${d%/}"; done
+}
+
+# slug_path <slug> -> the project path a slug was made from (inverse of project_slug)
+slug_path() { printf '/%s' "$1" | sed -e 's#%2F#/#g' -e 's#%20# #g' -e 's#%25#%#g'; }
 
 # foreign_md_files <dir> -> markdown files in the directory that are not handoff files
 foreign_md_files() {

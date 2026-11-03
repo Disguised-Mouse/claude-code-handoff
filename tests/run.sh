@@ -289,5 +289,20 @@ check "interrupt: cut-off reply marked once" '[ "$(grep -o "interrupted by user 
 check "interrupt: finished reply unmarked" 'section "$fi_" "Last reply from Claude" | grep -q "Finished answer" && ! section "$fi_" "Last reply from Claude" | grep -q interrupted'
 check "synthetic notice is no reply" '! grep -q "No response requested" "$fi_"'
 
+# ---- 16. list --all: every project under ~/.claude/handoffs, newest first, project column --
+H="$T/home"; P1="$H/p1"; P2="$H/two words"; mkdir -p "$P1" "$P2"
+E="eeeeeeee-5555-4555-8555-555555555555"; F="ffffffff-6666-4666-8666-666666666666"
+transcript "$E" "$T/e.jsonl"
+transcript "$F" "$T/f.jsonl"; sed -i.bak 's/2026-01-02T/2026-01-05T/' "$T/f.jsonl"
+for x in "$E $T/e.jsonl $P1" "$F $T/f.jsonl $P2"; do
+  set -- $x; s="$1"; t="$2"; shift 2
+  jq -nc --arg s "$s" --arg t "$t" --arg c "$*" '{session_id:$s, transcript_path:$t, cwd:$c}' | HOME="$H" CLAUDE_HANDOFF_IN_PROJECT=false "$S/save-handoff.sh"
+done
+la="$(HOME="$H" CLAUDE_HANDOFF_IN_PROJECT=false CLAUDE_CODE_SESSION_ID="$E" "$S/handoff-list.sh" --all "$P1")"
+check "list --all: both projects, newest first, with project paths" '[ "$(printf "%s\n" "$la" | wc -l | tr -d " ")" = 2 ] && printf "%s\n" "$la" | head -1 | grep -q "~/two words" && printf "%s\n" "$la" | tail -1 | grep -q "~/p1"'
+lh="$(HOME="$H" CLAUDE_HANDOFF_IN_PROJECT=false CLAUDE_CODE_SESSION_ID="$E" "$S/handoff-list.sh" "$P1")"
+check "list without --all: this project only, no project column" '[ "$(printf "%s\n" "$lh" | wc -l | tr -d " ")" = 1 ] && ! printf "%s" "$lh" | grep -q "~/"'
+HOME="$H" CLAUDE_HANDOFF_IN_PROJECT=false CLAUDE_CODE_SESSION_ID="$E" "$S/handoff-list.sh" --all "$P1" >/dev/null
+
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" = 0 ]

@@ -115,6 +115,9 @@ meta="$(jq -s -L "$HERE" \
   | ( reduce .[] as $e ({ last: null, out: [] };
         if ($e | is_prompt)
         then { last: null, out: (.out + (if .last then [.last] else [] end)) }
+        # An interrupt ends the turn too; the note is a prefix so the length cut keeps it.
+        elif ($e | is_interrupt)
+        then { last: null, out: (.out + (if .last then ["*(interrupted by user before finishing)* " + .last] else [] end)) }
         elif $e.type == "assistant"
         then ([ $e.message.content[]? | select(.type == "text") | .text | select(length > 0) ] | last) as $t
              | if $t then .last = $t else . end

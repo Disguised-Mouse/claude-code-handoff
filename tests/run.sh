@@ -303,6 +303,8 @@ check "list --all: both projects, newest first, with project paths" '[ "$(printf
 lh="$(HOME="$H" CLAUDE_HANDOFF_IN_PROJECT=false CLAUDE_CODE_SESSION_ID="$E" "$S/handoff-list.sh" "$P1")"
 check "list without --all: this project only, no project column" '[ "$(printf "%s\n" "$lh" | wc -l | tr -d " ")" = 1 ] && ! printf "%s" "$lh" | grep -q "~/"'
 HOME="$H" CLAUDE_HANDOFF_IN_PROJECT=false CLAUDE_CODE_SESSION_ID="$E" "$S/handoff-list.sh" --all "$P1" >/dev/null
+so="$(HOME="$H" CLAUDE_HANDOFF_IN_PROJECT=false CLAUDE_CODE_SESSION_ID="$E" "$S/handoff-show.sh" --adopt 1 "$P1" 2>&1)"
+check "show --adopt of another project: shown, not joined" 'printf "%s" "$so" | grep -q "not joined: .*project $P2" && printf "%s" "$so" | grep -q "^Handoff file: .*_ffffffff.md" && ! ls "$H/.claude/handoffs/"*/.state/eeeeeeee.adopt >/dev/null 2>&1'
 
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" = 0 ]

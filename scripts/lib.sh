@@ -80,10 +80,12 @@ handoff_dir() {
   local cwd
   cwd="$(project_root "$1")"
   if [ -n "${CLAUDE_HANDOFF_DIR:-}" ]; then
-    case "$CLAUDE_HANDOFF_DIR" in
-      /*)  printf '%s' "$CLAUDE_HANDOFF_DIR" ;;
-      "~"*) printf '%s%s' "$HOME" "${CLAUDE_HANDOFF_DIR#\~}" ;;
-      *)   printf '%s/%s' "$cwd" "$CLAUDE_HANDOFF_DIR" ;;
+    # No trailing slash: callers compare this path with dirname of the files in it.
+    local d="${CLAUDE_HANDOFF_DIR%/}"
+    case "$d" in
+      /*)  printf '%s' "$d" ;;
+      "~"*) printf '%s%s' "$HOME" "${d#\~}" ;;
+      *)   printf '%s/%s' "$cwd" "$d" ;;
     esac
     return
   fi

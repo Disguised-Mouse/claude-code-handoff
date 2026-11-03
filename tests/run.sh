@@ -323,5 +323,12 @@ printf '%s\n' '{"type":"user","sessionId":"'"$K"'","cwd":"'"$proj"'","timestamp"
 jq -nc --arg s "$K" --arg t "$T/k.jsonl" --arg c "$proj/sub" '{session_id:$s, transcript_path:$t, cwd:$c}' | "$S/save-handoff.sh"
 check "hook cwd: file in the start project, none in the cd target" 'ls "$dir"/*_12121212.md >/dev/null 2>&1 && [ ! -d "$proj/sub/.claude/handoffs" ]'
 
+# ---- 18. CLAUDE_HANDOFF_DIR with a trailing slash: own sessions still join ---------------
+M="34343434-9999-4999-8999-999999999999"; N="56565656-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+transcript "$M" "$T/m.jsonl"
+jq -nc --arg s "$M" --arg t "$T/m.jsonl" --arg c "$proj" '{session_id:$s, transcript_path:$t, cwd:$c}' | CLAUDE_HANDOFF_DIR="$T/hd/" "$S/save-handoff.sh"
+sm="$(CLAUDE_HANDOFF_DIR="$T/hd/" CLAUDE_CODE_SESSION_ID="$N" "$S/handoff-show.sh" --adopt 1 "$proj" 2>&1)"
+check "trailing slash in CLAUDE_HANDOFF_DIR: adopt joins" '! printf "%s" "$sm" | grep -q "not joined" && [ "$(cat "$T/hd/.state/56565656.adopt")" = "$M" ]'
+
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" = 0 ]

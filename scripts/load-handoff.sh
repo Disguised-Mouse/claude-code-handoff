@@ -18,7 +18,7 @@ loc="$(utf8_locale)"; [ -n "$loc" ] && export LC_ALL="$loc"
 
 input="$(cat)"
 printf '%s' "$input" | jq -e . >/dev/null 2>&1 || exit 0
-cwd="$(printf '%s' "$input" | jq -r '.cwd // empty')"
+cwd="$(hook_cwd "$input")"
 sid="$(printf '%s' "$input" | jq -r '.session_id // empty')"
 source="$(printf '%s' "$input" | jq -r '.source // "startup"')"
 [ -n "$cwd" ] || cwd="$PWD"

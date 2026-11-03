@@ -10,7 +10,7 @@ is_headless && exit 0
 input="$(cat)"
 printf '%s' "$input" | jq -e . >/dev/null 2>&1 || exit 0
 sid="$(printf '%s' "$input" | jq -r '.session_id // empty')"
-cwd="$(printf '%s' "$input" | jq -r '.cwd // empty')"
+cwd="$(hook_cwd "$input")"
 [ -n "$sid" ] || exit 0
 [ -n "$cwd" ] || cwd="$PWD"
 dir="$(handoff_dir "$cwd")"

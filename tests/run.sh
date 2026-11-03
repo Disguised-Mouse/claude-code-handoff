@@ -192,7 +192,10 @@ mkdir -p "$dir/.state/aaaaaaaa.lock"; date +%s > "$dir/.state/aaaaaaaa.lock/t"
 check "fresh lock blocks (times out)" '! take_lock "$dir" "$A"'
 printf '1' > "$dir/.state/aaaaaaaa.lock/t"
 check "stale lock is taken over" 'take_lock "$dir" "$A" && release_lock "$dir" "$A"'
-check "--version prints a version" '"$S/save-handoff.sh" --version | grep -Eq "^[0-9]+\.[0-9]+"'
+check "--version prints a version" '"$S/save-handoff.sh" --version | grep -Eq "^([0-9]+\.[0-9]+|[0-9a-f]{7,40}|dev)$"'
+# No version field: Claude Code names the install folder after the commit; that is the version.
+mkdir -p "$T/cache/0123456789ab/.claude-plugin" && cp -R "$S" "$T/cache/0123456789ab/scripts" && printf '{"name":"handoff"}\n' > "$T/cache/0123456789ab/.claude-plugin/plugin.json"
+check "--version without a version field: the commit folder name" '[ "$("$T/cache/0123456789ab/scripts/save-handoff.sh" --version)" = 0123456789ab ]'
 check "project slug percent-encodes" '[ "$(project_slug "/a b/c-d")" = "a%20b%2Fc-d" ]'
 
 # ---- 8. start screen, index once, ordering by epoch ----------------------------------
@@ -311,6 +314,14 @@ check "list without --all: this project only, no project column" '[ "$(printf "%
 HOME="$H" CLAUDE_HANDOFF_IN_PROJECT=false CLAUDE_CODE_SESSION_ID="$E" "$S/handoff-list.sh" --all "$P1" >/dev/null
 so="$(HOME="$H" CLAUDE_HANDOFF_IN_PROJECT=false CLAUDE_CODE_SESSION_ID="$E" "$S/handoff-show.sh" --adopt 1 "$P1" 2>&1)"
 check "show --adopt of another project: shown, not joined" 'printf "%s" "$so" | grep -q "not joined: .*project $P2" && printf "%s" "$so" | grep -q "^Handoff file: .*_ffffffff.md" && ! ls "$H/.claude/handoffs/"*/.state/eeeeeeee.adopt >/dev/null 2>&1'
+
+# ---- 17. project = where the session started, not where the Bash tool last cd-ed ---------
+K="12121212-8888-4888-8888-888888888888"
+mkdir -p "$proj/sub"
+printf '%s\n' '{"type":"user","sessionId":"'"$K"'","cwd":"'"$proj"'","timestamp":"2026-01-06T10:00:00.000Z","message":{"role":"user","content":"start here"}}' \
+  '{"type":"assistant","sessionId":"'"$K"'","cwd":"'"$proj/sub"'","timestamp":"2026-01-06T10:00:05.000Z","message":{"role":"assistant","content":[{"type":"text","text":"moved"}]}}' > "$T/k.jsonl"
+jq -nc --arg s "$K" --arg t "$T/k.jsonl" --arg c "$proj/sub" '{session_id:$s, transcript_path:$t, cwd:$c}' | "$S/save-handoff.sh"
+check "hook cwd: file in the start project, none in the cd target" 'ls "$dir"/*_12121212.md >/dev/null 2>&1 && [ ! -d "$proj/sub/.claude/handoffs" ]'
 
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" = 0 ]

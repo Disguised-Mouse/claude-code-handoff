@@ -26,12 +26,18 @@ def prompt_text:
     elif type == "array" then (map(select(type == "object" and .type == "text") | .text // "") | join(" "))
     else "" end;
 
+# The marker Claude Code writes as a user entry when the user stops a turn (Esc), plain or
+# "for tool use". It ends the turn but is no request.
+def is_interrupt:
+  (.type == "user" and (prompt_text | test("^\\[Request interrupted by user")));
+
 # A user request: typed text, not a tool result, not a slash command, not a skill
-# invocation, not the continuation message Claude Code inserts after compaction.
+# invocation, not the continuation message Claude Code inserts after compaction, not an interrupt.
 def is_prompt:
   (.type == "user" and .isMeta != true and .isCompactSummary != true
    and ((.message.content | type) == "string"
         or ((.message.content | type) == "array" and ((.message.content | any(type == "object" and .type == "tool_result")) | not)))
    and (prompt_text | length) > 0
    and (prompt_text | test("^\\s*<(command-name|command-message|local-command)") | not)
-   and (prompt_text | test("^\\s*/[A-Za-z][A-Za-z0-9:_-]*\\s*$") | not));
+   and (prompt_text | test("^\\s*/[A-Za-z][A-Za-z0-9:_-]*\\s*$") | not)
+   and (is_interrupt | not));

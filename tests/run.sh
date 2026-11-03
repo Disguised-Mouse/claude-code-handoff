@@ -270,5 +270,24 @@ rm -f "$T/bin/xdg-open" "$T/opened"
 out="$(CLAUDE_CODE_SESSION_ID="$A" PATH="$T/bin:$PATH" "$S/handoff-open.sh" "$proj" 2>/dev/null)"
 check "open without an opener: only prints the path, exit 0" '[ "$out" = "$fa" ] && [ ! -f "$T/opened" ]'
 
+# ---- 15. interrupts: the marker ends the turn but is no request; the cut-off reply says so --
+I="dddddddd-4444-4444-8444-444444444444"
+cat > "$T/i.jsonl" <<EOF
+{"type":"user","sessionId":"$I","timestamp":"2026-01-03T10:00:00.000Z","message":{"role":"user","content":"start the job"}}
+{"type":"assistant","sessionId":"$I","timestamp":"2026-01-03T10:00:05.000Z","message":{"role":"assistant","content":[{"type":"text","text":"Half-way answer"}]}}
+{"type":"user","sessionId":"$I","timestamp":"2026-01-03T10:00:06.000Z","message":{"role":"user","content":[{"type":"text","text":"[Request interrupted by user]"}]}}
+{"type":"user","sessionId":"$I","timestamp":"2026-01-03T10:00:07.000Z","message":{"role":"user","content":[{"type":"text","text":"[Request interrupted by user for tool use]"}]}}
+{"type":"assistant","sessionId":"$I","timestamp":"2026-01-03T10:00:08.000Z","message":{"role":"assistant","model":"<synthetic>","content":[{"type":"text","text":"No response requested."}]}}
+{"type":"user","sessionId":"$I","timestamp":"2026-01-03T10:01:00.000Z","message":{"role":"user","content":"do it differently"}}
+{"type":"assistant","sessionId":"$I","timestamp":"2026-01-03T10:01:05.000Z","message":{"role":"assistant","content":[{"type":"text","text":"Finished answer"}]}}
+EOF
+jq -nc --arg s "$I" --arg t "$T/i.jsonl" --arg c "$proj" '{session_id:$s, transcript_path:$t, cwd:$c, last_assistant_message:"Finished answer"}' | "$S/save-handoff.sh"
+fi_="$(ls "$dir"/*_dddddddd.md 2>/dev/null | head -1)"
+check "interrupt: markers are not counted as turns" 'grep -q "^- User turns: 2$" "$fi_"'
+check "interrupt: markers are not listed as requests" '! grep -q "Request interrupted" "$fi_"'
+check "interrupt: cut-off reply marked once" '[ "$(grep -o "interrupted by user before finishing" "$fi_" | wc -l | tr -d " ")" = 1 ] && grep -q "before finishing)\* Half-way answer" "$fi_"'
+check "interrupt: finished reply unmarked" 'section "$fi_" "Last reply from Claude" | grep -q "Finished answer" && ! section "$fi_" "Last reply from Claude" | grep -q interrupted'
+check "synthetic notice is no reply" '! grep -q "No response requested" "$fi_"'
+
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" = 0 ]

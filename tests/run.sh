@@ -7,7 +7,9 @@ S="$HERE/../scripts"
 T="$(mktemp -d "${TMPDIR:-/tmp}/handoff-test.XXXXXX")"
 trap 'rm -rf "$T"' EXIT
 export CLAUDE_CODE_SESSION_ATTENDED=1
-unset CLAUDE_HANDOFF_DIR CLAUDE_HANDOFF_KEEP CLAUDE_HANDOFF_IN_PROJECT CLAUDE_HANDOFF_ROOT CLAUDE_PROJECT_DIR
+# Every setting, not a list: a Claude Code session exports the user's own from settings.json.
+for v in $(compgen -v | grep '^CLAUDE_HANDOFF_'); do unset "$v"; done
+unset CLAUDE_PROJECT_DIR
 fail=0; pass=0
 ok()   { pass=$((pass + 1)); printf 'ok   %s\n' "$1"; }
 bad()  { fail=$((fail + 1)); printf 'FAIL %s\n' "$1"; }

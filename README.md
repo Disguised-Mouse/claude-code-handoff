@@ -53,7 +53,7 @@ Three words you will meet:
 
 | Command | What it does |
 |---|---|
-| `/handoff:list` | The session list with an arrow-key menu to continue one. |
+| `/handoff:list` | The session list with an arrow-key menu to continue one. With `CLAUDE_HANDOFF_IN_PROJECT=false` it lists every project with a project column; `/handoff:list here` lists this project only. A session of another project is shown, not joined: continue it from that project. |
 | `/handoff:load <n>` | Continue a session by number, id or part of its name; this session writes into its file from then on. Without an argument: the menu. |
 | `/handoff:notes` | Claude writes the notes: goal, done, in progress, decisions and why, rejected options, open questions, next action, next steps, gotchas. One turn. |
 | `/handoff:status` | Which file this session writes to, which sessions share it, which are open. |

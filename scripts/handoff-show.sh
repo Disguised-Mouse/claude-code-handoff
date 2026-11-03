@@ -39,6 +39,13 @@ if [ -z "$f" ] || [ ! -f "$f" ]; then
   exit 1
 fi
 
+# A file of another project (handoff-list.sh --all): this session's hooks write to its own
+# project's folder, so joining that thread would split it. Show it only.
+if [ "$adopt" = 1 ] && [ "$(dirname "$f")" != "$dir" ]; then
+  echo "not joined: this handoff belongs to project $(slug_path "$(basename "$(dirname "$f")")" | clean_text); to continue it, start Claude Code there and run /handoff:load" >&2
+  adopt=0
+fi
+
 if [ "$adopt" = 1 ]; then
   root="$(root_of_file "$f")"
   if [ -z "$me" ]; then

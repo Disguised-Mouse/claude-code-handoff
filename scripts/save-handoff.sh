@@ -118,7 +118,8 @@ meta="$(jq -s -L "$HERE" \
         # An interrupt ends the turn too; the note is a prefix so the length cut keeps it.
         elif ($e | is_interrupt)
         then { last: null, out: (.out + (if .last then ["*(interrupted by user before finishing)* " + .last] else [] end)) }
-        elif $e.type == "assistant"
+        # "<synthetic>" rows are Claude Code notices (limit hit, login expired), not replies.
+        elif $e.type == "assistant" and $e.message.model != "<synthetic>"
         then ([ $e.message.content[]? | select(.type == "text") | .text | select(length > 0) ] | last) as $t
              | if $t then .last = $t else . end
         else . end)

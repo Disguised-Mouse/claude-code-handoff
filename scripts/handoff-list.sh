@@ -17,7 +17,9 @@ now="$(date +%s)"
 sid="$(current_session_id)"
 cbr="$(git -C "$cwd" rev-parse --abbrev-ref HEAD 2>/dev/null)"
 if [ "$all" = 1 ]; then
-  files="$(all_project_dirs | { ds=(); while IFS= read -r d; do ds+=("$d"); done; [ ${#ds[@]} -eq 0 ] || session_files "${ds[@]}"; })"
+  # This project's own folder too: it lives elsewhere unless CLAUDE_HANDOFF_IN_PROJECT=false.
+  # shortcut: newest 30 rows (each costs ~15 processes); raise when a menu needs more.
+  files="$({ printf '%s\n' "$dir"; all_project_dirs; } | awk '!seen[$0]++' | { ds=(); while IFS= read -r d; do ds+=("$d"); done; session_files "${ds[@]}"; } | head -n 30)"
 else
   files="$(session_files "$dir")"
 fi
@@ -41,7 +43,8 @@ printf '%s\n' "$files" | while IFS= read -r f; do
   br="$(header_field "$f" Branch | clean_text)"
   [ "$fd" = "$dir" ] && [ -n "$br" ] && [ -n "$cbr" ] && [ "$br" != "$cbr" ] && tail_col="${tail_col:+$tail_col · }branch $br"
   pc=""
-  if [ "$all" = 1 ]; then p="$(slug_path "$(basename "$fd")" | clean_text)"
+  if [ "$all" = 1 ]; then
+    if [ "$fd" = "$dir" ]; then p="$cwd"; else p="$(slug_path "$(basename "$fd")" | clean_text)"; fi
     case "$p" in "$HOME"|"$HOME"/*) p="~${p#"$HOME"}" ;; esac
     pc="$(pad "$p" 24)  "
   fi

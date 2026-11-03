@@ -17,7 +17,6 @@ sid="$(printf '%s' "$input" | jq -r '.session_id // empty')"
 cwd="$(hook_cwd "$input")"
 [ -n "$transcript" ] && [ -f "$transcript" ] || exit 0
 transcript_is_headless "$transcript" && exit 0
-[ -n "$cwd" ] || cwd="$PWD"
 [ -n "$sid" ] || { echo "handoff: hook input carries no session_id; nothing written" >&2; exit 1; }
 
 dir="$(handoff_dir "$cwd")"
@@ -33,7 +32,7 @@ printf '%s' "$transcript" > "$st/${sid:0:8}.transcript"
 printf '%s' "$cwd" > "$st/${sid:0:8}.cwd"
 # The final reply travels in a file: jq's --arg has a platform limit on argument length.
 last_msg_file="$st/${sid:0:8}.last.$$"
-printf '%s' "$input" | jq -r '.last_assistant_message // empty' > "$last_msg_file"
+printf '%s' "$input" | jq -j '.last_assistant_message // empty' > "$last_msg_file"
 trap 'rm -f "$last_msg_file"' EXIT
 # Open mark: not re-created when the session already ended while this (async) hook was running.
 closed_at="$(cat "$(closed_mark "$dir" "$sid")" 2>/dev/null || true)"
@@ -111,6 +110,7 @@ meta="$(jq -s -L "$HERE" \
   def clean_title: gsub("[\u0000-\u001f\u007f]"; "");
   def tool_uses: .[] | select(.type == "assistant") | .message.content[]? | select(.type == "tool_use");
   [ .[] | select(is_prompt) ] as $users
+  | [ .[] | select(.type == "assistant" and .message.model == "<synthetic>") | .message.content[]? | select(.type == "text") | .text ] as $notices
   # End-of-turn replies: the last assistant text seen before each user prompt (and before the end).
   | ( reduce .[] as $e ({ last: null, out: [] };
         if ($e | is_prompt)
@@ -125,7 +125,7 @@ meta="$(jq -s -L "$HERE" \
         else . end)
       | .out + (if .last then [.last] else [] end)
       # The hook input carries the final reply directly; use it if the transcript lacks it.
-      | if $lam != "" and (last // "") != $lam then . + [$lam] else . end ) as $texts
+      | if $lam != "" and (last // "") != $lam and ($notices | index([$lam]) | not) then . + [$lam] else . end ) as $texts
   # One API call produces several transcript rows with the same usage: count each request once,
   # in time order (unique_by sorts by its key, so the order is restored afterwards).
   | ( [ .[] | select(.type == "assistant" and .message.usage != null) ]

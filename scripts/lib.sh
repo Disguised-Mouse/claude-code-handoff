@@ -70,7 +70,7 @@ project_root() {
 hook_cwd() {
   local t c=""
   t="$(printf '%s' "$1" | jq -r '.transcript_path // empty' 2>/dev/null)"
-  [ -n "$t" ] && [ -f "$t" ] && c="$(head -n 200 "$t" | jq -r 'select(.cwd != null) | .cwd' 2>/dev/null | head -1)"
+  [ -n "$t" ] && [ -f "$t" ] && c="$(jq -rn 'first(inputs | .cwd // empty)' "$t" 2>/dev/null)"
   [ -n "$c" ] || c="$(printf '%s' "$1" | jq -r '.cwd // empty' 2>/dev/null)"
   printf '%s' "${c:-$PWD}"
 }
@@ -80,10 +80,12 @@ handoff_dir() {
   local cwd
   cwd="$(project_root "$1")"
   if [ -n "${CLAUDE_HANDOFF_DIR:-}" ]; then
-    case "$CLAUDE_HANDOFF_DIR" in
-      /*)  printf '%s' "$CLAUDE_HANDOFF_DIR" ;;
-      "~"*) printf '%s%s' "$HOME" "${CLAUDE_HANDOFF_DIR#\~}" ;;
-      *)   printf '%s/%s' "$cwd" "$CLAUDE_HANDOFF_DIR" ;;
+    # No trailing slash: callers compare this path with dirname of the files in it.
+    local d="${CLAUDE_HANDOFF_DIR%/}"
+    case "$d" in
+      /*)  printf '%s' "$d" ;;
+      "~"*) printf '%s%s' "$HOME" "${d#\~}" ;;
+      *)   printf '%s/%s' "$cwd" "$d" ;;
     esac
     return
   fi

@@ -107,6 +107,7 @@ check "array prompt text shown" 'grep -q "second request with a picture" "$fa"'
 check "AWS secret redacted" '! grep -q "abcdefgh1234" "$fa"'
 check "github token redacted" '! grep -q "ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" "$fa"'
 check "ampersand survives the substitution" 'grep -q "Reply two & done" "$fa"'
+check "last reply not repeated under earlier replies (hook copy equals the transcript's)" '[ "$(grep -c "Reply two & done" "$fa")" = 1 ]'
 check "cwd sidecar written" '[ "$(cat "$dir/.state/aaaaaaaa.cwd")" = "$proj" ]'
 
 # ---- 2. notes sidecar is the source of truth ----------------------------------------
@@ -297,6 +298,8 @@ check "interrupt: markers are not listed as requests" '! grep -q "Request interr
 check "interrupt: cut-off reply marked once" '[ "$(grep -o "interrupted by user before finishing" "$fi_" | wc -l | tr -d " ")" = 1 ] && grep -q "before finishing)\* Half-way answer" "$fi_"'
 check "interrupt: finished reply unmarked" 'section "$fi_" "Last reply from Claude" | grep -q "Finished answer" && ! section "$fi_" "Last reply from Claude" | grep -q interrupted'
 check "synthetic notice is no reply" '! grep -q "No response requested" "$fi_"'
+jq -nc --arg s "$I" --arg t "$T/i.jsonl" --arg c "$proj" '{session_id:$s, transcript_path:$t, cwd:$c, last_assistant_message:"No response requested."}' | "$S/save-handoff.sh"
+check "synthetic notice as last_assistant_message is no reply either" '! grep -q "No response requested" "$fi_" && section "$fi_" "Last reply from Claude" | grep -q "Finished answer"'
 
 # ---- 16. list --all: every project under ~/.claude/handoffs, newest first, project column --
 H="$T/home"; P1="$H/p1"; P2="$H/two words"; mkdir -p "$P1" "$P2"
@@ -313,6 +316,9 @@ lh="$(HOME="$H" CLAUDE_HANDOFF_IN_PROJECT=false CLAUDE_CODE_SESSION_ID="$E" "$S/
 check "list without --all: this project only, no project column" '[ "$(printf "%s\n" "$lh" | wc -l | tr -d " ")" = 1 ] && ! printf "%s" "$lh" | grep -q "~/"'
 HOME="$H" CLAUDE_HANDOFF_IN_PROJECT=false CLAUDE_CODE_SESSION_ID="$E" "$S/handoff-list.sh" --all "$P1" >/dev/null
 so="$(HOME="$H" CLAUDE_HANDOFF_IN_PROJECT=false CLAUDE_CODE_SESSION_ID="$E" "$S/handoff-show.sh" --adopt 1 "$P1" 2>&1)"
+own="$(ls "$dir"/*.md | grep -vc LATEST.md)"
+lo="$(HOME="$H" CLAUDE_CODE_SESSION_ID="$E" "$S/handoff-list.sh" --all "$proj")"
+check "list --all, handoffs inside the project: own sessions listed with the leftover folders" '[ "$(printf "%s\n" "$lo" | wc -l | tr -d " ")" = "$((own + 2))" ]'
 check "show --adopt of another project: shown, not joined" 'printf "%s" "$so" | grep -q "not joined: .*project $P2" && printf "%s" "$so" | grep -q "^Handoff file: .*_ffffffff.md" && ! ls "$H/.claude/handoffs/"*/.state/eeeeeeee.adopt >/dev/null 2>&1'
 
 # ---- 17. project = where the session started, not where the Bash tool last cd-ed ---------
@@ -322,6 +328,13 @@ printf '%s\n' '{"type":"user","sessionId":"'"$K"'","cwd":"'"$proj"'","timestamp"
   '{"type":"assistant","sessionId":"'"$K"'","cwd":"'"$proj/sub"'","timestamp":"2026-01-06T10:00:05.000Z","message":{"role":"assistant","content":[{"type":"text","text":"moved"}]}}' > "$T/k.jsonl"
 jq -nc --arg s "$K" --arg t "$T/k.jsonl" --arg c "$proj/sub" '{session_id:$s, transcript_path:$t, cwd:$c}' | "$S/save-handoff.sh"
 check "hook cwd: file in the start project, none in the cd target" 'ls "$dir"/*_12121212.md >/dev/null 2>&1 && [ ! -d "$proj/sub/.claude/handoffs" ]'
+
+# ---- 18. CLAUDE_HANDOFF_DIR with a trailing slash: own sessions still join ---------------
+M="34343434-9999-4999-8999-999999999999"; N="56565656-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+transcript "$M" "$T/m.jsonl"
+jq -nc --arg s "$M" --arg t "$T/m.jsonl" --arg c "$proj" '{session_id:$s, transcript_path:$t, cwd:$c}' | CLAUDE_HANDOFF_DIR="$T/hd/" "$S/save-handoff.sh"
+sm="$(CLAUDE_HANDOFF_DIR="$T/hd/" CLAUDE_CODE_SESSION_ID="$N" "$S/handoff-show.sh" --adopt 1 "$proj" 2>&1)"
+check "trailing slash in CLAUDE_HANDOFF_DIR: adopt joins" '! printf "%s" "$sm" | grep -q "not joined" && [ "$(cat "$T/hd/.state/56565656.adopt")" = "$M" ]'
 
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" = 0 ]

@@ -17,7 +17,6 @@ trigger="$(printf '%s' "$input" | jq -r '.trigger // "unknown"')"
 summary="$(printf '%s' "$input" | jq -r -L "$HERE" 'include "scrub"; .compact_summary // empty | scrub' \
   | sed -e 's#^[[:space:]]*</\{0,1\}summary>[[:space:]]*$##' -e 's/^#\{1,3\} /#### /' | cat -s | sed -e '/./,$!d')"
 [ -n "$sid" ] && [ -n "$summary" ] || exit 0
-[ -n "$cwd" ] || cwd="$PWD"
 
 dir="$(handoff_dir "$cwd")"
 side="$(compact_sidecar "$dir" "$sid")"

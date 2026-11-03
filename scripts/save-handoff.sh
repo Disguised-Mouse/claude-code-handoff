@@ -110,6 +110,7 @@ meta="$(jq -s -L "$HERE" \
   def clean_title: gsub("[\u0000-\u001f\u007f]"; "");
   def tool_uses: .[] | select(.type == "assistant") | .message.content[]? | select(.type == "tool_use");
   [ .[] | select(is_prompt) ] as $users
+  | [ .[] | select(.type == "assistant" and .message.model == "<synthetic>") | .message.content[]? | select(.type == "text") | .text ] as $notices
   # End-of-turn replies: the last assistant text seen before each user prompt (and before the end).
   | ( reduce .[] as $e ({ last: null, out: [] };
         if ($e | is_prompt)
@@ -124,7 +125,7 @@ meta="$(jq -s -L "$HERE" \
         else . end)
       | .out + (if .last then [.last] else [] end)
       # The hook input carries the final reply directly; use it if the transcript lacks it.
-      | if $lam != "" and (last // "") != $lam then . + [$lam] else . end ) as $texts
+      | if $lam != "" and (last // "") != $lam and ($notices | index([$lam]) | not) then . + [$lam] else . end ) as $texts
   # One API call produces several transcript rows with the same usage: count each request once,
   # in time order (unique_by sorts by its key, so the order is restored afterwards).
   | ( [ .[] | select(.type == "assistant" and .message.usage != null) ]

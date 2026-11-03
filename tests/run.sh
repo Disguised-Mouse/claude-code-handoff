@@ -298,6 +298,8 @@ check "interrupt: markers are not listed as requests" '! grep -q "Request interr
 check "interrupt: cut-off reply marked once" '[ "$(grep -o "interrupted by user before finishing" "$fi_" | wc -l | tr -d " ")" = 1 ] && grep -q "before finishing)\* Half-way answer" "$fi_"'
 check "interrupt: finished reply unmarked" 'section "$fi_" "Last reply from Claude" | grep -q "Finished answer" && ! section "$fi_" "Last reply from Claude" | grep -q interrupted'
 check "synthetic notice is no reply" '! grep -q "No response requested" "$fi_"'
+jq -nc --arg s "$I" --arg t "$T/i.jsonl" --arg c "$proj" '{session_id:$s, transcript_path:$t, cwd:$c, last_assistant_message:"No response requested."}' | "$S/save-handoff.sh"
+check "synthetic notice as last_assistant_message is no reply either" '! grep -q "No response requested" "$fi_" && section "$fi_" "Last reply from Claude" | grep -q "Finished answer"'
 
 # ---- 16. list --all: every project under ~/.claude/handoffs, newest first, project column --
 H="$T/home"; P1="$H/p1"; P2="$H/two words"; mkdir -p "$P1" "$P2"

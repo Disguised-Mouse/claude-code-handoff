@@ -313,6 +313,9 @@ lh="$(HOME="$H" CLAUDE_HANDOFF_IN_PROJECT=false CLAUDE_CODE_SESSION_ID="$E" "$S/
 check "list without --all: this project only, no project column" '[ "$(printf "%s\n" "$lh" | wc -l | tr -d " ")" = 1 ] && ! printf "%s" "$lh" | grep -q "~/"'
 HOME="$H" CLAUDE_HANDOFF_IN_PROJECT=false CLAUDE_CODE_SESSION_ID="$E" "$S/handoff-list.sh" --all "$P1" >/dev/null
 so="$(HOME="$H" CLAUDE_HANDOFF_IN_PROJECT=false CLAUDE_CODE_SESSION_ID="$E" "$S/handoff-show.sh" --adopt 1 "$P1" 2>&1)"
+own="$(ls "$dir"/*.md | grep -vc LATEST.md)"
+lo="$(HOME="$H" CLAUDE_CODE_SESSION_ID="$E" "$S/handoff-list.sh" --all "$proj")"
+check "list --all, handoffs inside the project: own sessions listed with the leftover folders" '[ "$(printf "%s\n" "$lo" | wc -l | tr -d " ")" = "$((own + 2))" ]'
 check "show --adopt of another project: shown, not joined" 'printf "%s" "$so" | grep -q "not joined: .*project $P2" && printf "%s" "$so" | grep -q "^Handoff file: .*_ffffffff.md" && ! ls "$H/.claude/handoffs/"*/.state/eeeeeeee.adopt >/dev/null 2>&1'
 
 # ---- 17. project = where the session started, not where the Bash tool last cd-ed ---------

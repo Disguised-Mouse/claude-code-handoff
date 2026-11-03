@@ -58,8 +58,10 @@ handoff ○ after first reply · ctx 2%
 Use it as the status line:
 
 ```json
-{ "statusLine": { "type": "command", "command": "\"$(ls -d ~/.claude/plugins/cache/claude-code-handoff/handoff/*/ | sort -V | tail -1)scripts/statusline.sh\"" } }
+{ "statusLine": { "type": "command", "command": "\"$(jq -r '.plugins[\"handoff@claude-code-handoff\"][0].installPath' ~/.claude/plugins/installed_plugins.json)/scripts/statusline.sh\"" } }
 ```
+
+The path comes from Claude Code's install record: cache folders are named after the plugin's commit, which do not sort by age, and older folders can stay in the cache.
 
 or, if you already have a status script, pipe the same JSON into `handoff-status.sh --short` from it and print the result as one more line.
 

@@ -23,7 +23,7 @@ printf '%s' "$input" | jq -e . >/dev/null 2>&1 || exit 0
 [ "$(printf '%s' "$input" | jq -r '.stop_hook_active // false')" = "true" ] && exit 0
 transcript="$(printf '%s' "$input" | jq -r '.transcript_path // empty')"
 sid="$(printf '%s' "$input" | jq -r '.session_id // empty')"
-cwd="$(printf '%s' "$input" | jq -r '.cwd // empty')"
+cwd="$(hook_cwd "$input")"
 [ -f "$transcript" ] && [ -n "$sid" ] || exit 0
 [ -n "$cwd" ] || cwd="$PWD"
 

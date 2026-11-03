@@ -14,7 +14,7 @@ input="$(cat)"
 printf '%s' "$input" | jq -e . >/dev/null 2>&1 || exit 0
 transcript="$(printf '%s' "$input" | jq -r '.transcript_path // empty')"
 sid="$(printf '%s' "$input" | jq -r '.session_id // empty')"
-cwd="$(printf '%s' "$input" | jq -r '.cwd // empty')"
+cwd="$(hook_cwd "$input")"
 [ -n "$transcript" ] && [ -f "$transcript" ] || exit 0
 transcript_is_headless "$transcript" && exit 0
 [ -n "$cwd" ] || cwd="$PWD"

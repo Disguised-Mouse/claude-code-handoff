@@ -10,7 +10,7 @@ is_headless && exit 0
 input="$(cat)"
 printf '%s' "$input" | jq -e . >/dev/null 2>&1 || exit 0
 sid="$(printf '%s' "$input" | jq -r '.session_id // empty')"
-cwd="$(printf '%s' "$input" | jq -r '.cwd // empty')"
+cwd="$(hook_cwd "$input")"
 trigger="$(printf '%s' "$input" | jq -r '.trigger // "unknown"')"
 # Claude Code wraps the summary in <summary> tags and uses its own "## " headings; strip the
 # wrapper and demote headings so they cannot be mistaken for the handoff file's sections.

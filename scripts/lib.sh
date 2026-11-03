@@ -61,6 +61,17 @@ project_root() {
   printf '%s' "${top:-$cwd}"
 }
 
+# hook_cwd <hook input JSON> -> the directory the session started in: the first cwd its
+# transcript records. The hook input's cwd follows every `cd` of the Bash tool, so one session
+# would otherwise write into several projects' folders. Falls back to that cwd, then $PWD.
+hook_cwd() {
+  local t c=""
+  t="$(printf '%s' "$1" | jq -r '.transcript_path // empty' 2>/dev/null)"
+  [ -n "$t" ] && [ -f "$t" ] && c="$(head -n 200 "$t" | jq -r 'select(.cwd != null) | .cwd' 2>/dev/null | head -1)"
+  [ -n "$c" ] || c="$(printf '%s' "$1" | jq -r '.cwd // empty' 2>/dev/null)"
+  printf '%s' "${c:-$PWD}"
+}
+
 # handoff_dir <session cwd> -> prints the directory that holds the handoff files
 handoff_dir() {
   local cwd

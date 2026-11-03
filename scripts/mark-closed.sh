@@ -12,7 +12,6 @@ printf '%s' "$input" | jq -e . >/dev/null 2>&1 || exit 0
 sid="$(printf '%s' "$input" | jq -r '.session_id // empty')"
 cwd="$(hook_cwd "$input")"
 [ -n "$sid" ] || exit 0
-[ -n "$cwd" ] || cwd="$PWD"
 dir="$(handoff_dir "$cwd")"
 [ -d "$(state_dir "$dir")" ] || exit 0
 rm -f "$(open_mark "$dir" "$sid")"

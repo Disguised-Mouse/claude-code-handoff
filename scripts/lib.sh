@@ -70,7 +70,7 @@ project_root() {
 hook_cwd() {
   local t c=""
   t="$(printf '%s' "$1" | jq -r '.transcript_path // empty' 2>/dev/null)"
-  [ -n "$t" ] && [ -f "$t" ] && c="$(head -n 200 "$t" | jq -r 'select(.cwd != null) | .cwd' 2>/dev/null | head -1)"
+  [ -n "$t" ] && [ -f "$t" ] && c="$(jq -rn 'first(inputs | .cwd // empty)' "$t" 2>/dev/null)"
   [ -n "$c" ] || c="$(printf '%s' "$1" | jq -r '.cwd // empty' 2>/dev/null)"
   printf '%s' "${c:-$PWD}"
 }

@@ -17,7 +17,6 @@ sid="$(printf '%s' "$input" | jq -r '.session_id // empty')"
 cwd="$(hook_cwd "$input")"
 [ -n "$transcript" ] && [ -f "$transcript" ] || exit 0
 transcript_is_headless "$transcript" && exit 0
-[ -n "$cwd" ] || cwd="$PWD"
 [ -n "$sid" ] || { echo "handoff: hook input carries no session_id; nothing written" >&2; exit 1; }
 
 dir="$(handoff_dir "$cwd")"

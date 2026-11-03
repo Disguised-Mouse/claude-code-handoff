@@ -25,7 +25,6 @@ transcript="$(printf '%s' "$input" | jq -r '.transcript_path // empty')"
 sid="$(printf '%s' "$input" | jq -r '.session_id // empty')"
 cwd="$(hook_cwd "$input")"
 [ -f "$transcript" ] && [ -n "$sid" ] || exit 0
-[ -n "$cwd" ] || cwd="$PWD"
 
 dir="$(handoff_dir "$cwd")"
 state="$dir/.state/${sid:0:8}.auto-notes"

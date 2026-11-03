@@ -21,7 +21,6 @@ printf '%s' "$input" | jq -e . >/dev/null 2>&1 || exit 0
 cwd="$(hook_cwd "$input")"
 sid="$(printf '%s' "$input" | jq -r '.session_id // empty')"
 source="$(printf '%s' "$input" | jq -r '.source // "startup"')"
-[ -n "$cwd" ] || cwd="$PWD"
 
 # `claude --resume` / `--continue` / a fork: Claude Code tells this hook whether the prompt cache
 # has expired and what re-sending the history will cost. That is the moment a fresh session

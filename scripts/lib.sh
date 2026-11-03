@@ -39,11 +39,14 @@ int_setting() {
   case "$1" in ''|*[!0-9]*) printf '%s' "$2" ;; *) printf '%s' "$1" ;; esac
 }
 
-# plugin_version -> "version" from .claude-plugin/plugin.json next to the scripts
+# plugin_version -> "version" from .claude-plugin/plugin.json next to the scripts; without one,
+# Claude Code installs into a folder named after the commit, so that name; else "dev"
 plugin_version() {
-  local here
+  local here v
   here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-  sed -n 's/^[[:space:]]*"version":[[:space:]]*"\([^"]*\)".*/\1/p' "$here/../.claude-plugin/plugin.json" 2>/dev/null | head -1
+  v="$(sed -n 's/^[[:space:]]*"version":[[:space:]]*"\([^"]*\)".*/\1/p' "$here/../.claude-plugin/plugin.json" 2>/dev/null | head -1)"
+  [ -n "$v" ] || v="$(basename "$(dirname "$here")" | grep -E '^[0-9a-f]{7,40}$')"
+  printf '%s' "${v:-dev}"
 }
 
 # project_slug <path> -> one flat name per project; "/" and spaces are percent-encoded so

@@ -192,7 +192,10 @@ mkdir -p "$dir/.state/aaaaaaaa.lock"; date +%s > "$dir/.state/aaaaaaaa.lock/t"
 check "fresh lock blocks (times out)" '! take_lock "$dir" "$A"'
 printf '1' > "$dir/.state/aaaaaaaa.lock/t"
 check "stale lock is taken over" 'take_lock "$dir" "$A" && release_lock "$dir" "$A"'
-check "--version prints a version" '"$S/save-handoff.sh" --version | grep -Eq "^[0-9]+\.[0-9]+"'
+check "--version prints a version" '"$S/save-handoff.sh" --version | grep -Eq "^([0-9]+\.[0-9]+|[0-9a-f]{7,40}|dev)$"'
+# No version field: Claude Code names the install folder after the commit; that is the version.
+mkdir -p "$T/cache/0123456789ab/.claude-plugin" && cp -R "$S" "$T/cache/0123456789ab/scripts" && printf '{"name":"handoff"}\n' > "$T/cache/0123456789ab/.claude-plugin/plugin.json"
+check "--version without a version field: the commit folder name" '[ "$("$T/cache/0123456789ab/scripts/save-handoff.sh" --version)" = 0123456789ab ]'
 check "project slug percent-encodes" '[ "$(project_slug "/a b/c-d")" = "a%20b%2Fc-d" ]'
 
 # ---- 8. start screen, index once, ordering by epoch ----------------------------------

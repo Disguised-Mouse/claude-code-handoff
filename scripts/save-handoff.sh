@@ -32,7 +32,7 @@ printf '%s' "$transcript" > "$st/${sid:0:8}.transcript"
 printf '%s' "$cwd" > "$st/${sid:0:8}.cwd"
 # The final reply travels in a file: jq's --arg has a platform limit on argument length.
 last_msg_file="$st/${sid:0:8}.last.$$"
-printf '%s' "$input" | jq -r '.last_assistant_message // empty' > "$last_msg_file"
+printf '%s' "$input" | jq -j '.last_assistant_message // empty' > "$last_msg_file"
 trap 'rm -f "$last_msg_file"' EXIT
 # Open mark: not re-created when the session already ended while this (async) hook was running.
 closed_at="$(cat "$(closed_mark "$dir" "$sid")" 2>/dev/null || true)"

@@ -107,6 +107,7 @@ check "array prompt text shown" 'grep -q "second request with a picture" "$fa"'
 check "AWS secret redacted" '! grep -q "abcdefgh1234" "$fa"'
 check "github token redacted" '! grep -q "ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" "$fa"'
 check "ampersand survives the substitution" 'grep -q "Reply two & done" "$fa"'
+check "last reply not repeated under earlier replies (hook copy equals the transcript's)" '[ "$(grep -c "Reply two & done" "$fa")" = 1 ]'
 check "cwd sidecar written" '[ "$(cat "$dir/.state/aaaaaaaa.cwd")" = "$proj" ]'
 
 # ---- 2. notes sidecar is the source of truth ----------------------------------------

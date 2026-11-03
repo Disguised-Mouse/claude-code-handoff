@@ -7,7 +7,9 @@ S="$HERE/../scripts"
 T="$(mktemp -d "${TMPDIR:-/tmp}/handoff-test.XXXXXX")"
 trap 'rm -rf "$T"' EXIT
 export CLAUDE_CODE_SESSION_ATTENDED=1
-unset CLAUDE_HANDOFF_DIR CLAUDE_HANDOFF_KEEP CLAUDE_HANDOFF_IN_PROJECT CLAUDE_HANDOFF_ROOT CLAUDE_PROJECT_DIR
+# Every setting, not a list: a Claude Code session exports the user's own from settings.json.
+for v in $(compgen -v | grep '^CLAUDE_HANDOFF_'); do unset "$v"; done
+unset CLAUDE_PROJECT_DIR
 fail=0; pass=0
 ok()   { pass=$((pass + 1)); printf 'ok   %s\n' "$1"; }
 bad()  { fail=$((fail + 1)); printf 'FAIL %s\n' "$1"; }
@@ -90,6 +92,10 @@ ctxt 175000; check "auto-notes: fires at 87%" 'an | jq -e ".reason | test(\"87%\
 ctxt 30000;  check "auto-notes: re-armed below 60% after compaction" '[ -z "$(an)" ] && [ "$(cat "$dir/.state/aaaaaaaa.auto-notes")" = 0 ]'
 ctxt 125000; check "auto-notes: fires again at 62%" 'an | jq -e ".decision == \"block\"" >/dev/null'
 rm -f "$dir/.state/aaaaaaaa.auto-notes"
+# First Stop of a session: the async writer has not made its file yet; the threshold stays open.
+G="99999999-7777-4777-8777-777777777777"
+ag="$(jq -nc --arg s "$G" --arg t "$T/ctx.jsonl" --arg c "$proj" '{session_id:$s, transcript_path:$t, cwd:$c}' | CLAUDE_HANDOFF_AUTO_NOTES=context CLAUDE_HANDOFF_CONTEXT_WINDOW=200000 "$S/auto-notes.sh")"
+check "auto-notes: no file yet -> quiet, threshold not used up" '[ -z "$ag" ] && [ ! -f "$dir/.state/99999999.auto-notes" ]'
 # Window derived from the transcript: a request above 200k means the 1M window.
 ctxt 300000; an1="$(jq -nc --arg s "$A" --arg t "$T/ctx.jsonl" --arg c "$proj" '{session_id:$s, transcript_path:$t, cwd:$c}' | CLAUDE_HANDOFF_AUTO_NOTES=context "$S/auto-notes.sh")"
 check "auto-notes: 300k request implies the 1M window (30%, quiet)" '[ -z "$an1" ]'

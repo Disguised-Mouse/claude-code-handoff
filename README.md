@@ -61,6 +61,8 @@ Three words you will meet:
 
 At start, type the number. Later, `/handoff:list` to pick, `/handoff:load <n>` if you already know which.
 
+`/handoff:list`, `/handoff:status`, `/handoff:open` and `/handoff:load` without a number are answered by a hooks module (`hooks/instant.ts`) that runs the same scripts and opens the menu itself: no model turn, no tokens, and the output still reaches Claude. After a pick it runs `/handoff:load <n>`, which needs one turn. The module needs a Claude Code build with hooks modules (tested on 2.1.318); where it does not load or a hook fails, the skills answer as before.
+
 ## The file
 
 <p align="center"><img src="docs/handoff-file.svg?v=0.6.0" alt="A handoff file: title, Next line, header with thread and status, notes, last reply, tokens table" width="820"></p>
@@ -189,7 +191,7 @@ Every script accepts the hook's JSON on stdin, so they can be tested without a s
 jq -nc '{session_id:"abc", transcript_path:"/path/to/session.jsonl", cwd:"/path/to/project"}' | scripts/save-handoff.sh
 ```
 
-`tests/run.sh` runs 108 checks on synthetic fixtures in a temp directory (render stability, notes markers, retention guard, thread join, start screen, status line, secret scrubbing). The images in `docs/` are rendered from real plugin output with `docs/render-terminal.py`. How the hooks, state files and threads work: [docs/INTERNALS.md](docs/INTERNALS.md).
+`tests/run.sh` runs 108 checks on synthetic fixtures in a temp directory (render stability, notes markers, retention guard, thread join, start screen, status line, secret scrubbing). `claude plugin test .` runs the hooks module's tests (`tests/instant.test.ts`). The images in `docs/` are rendered from real plugin output with `docs/render-terminal.py`. How the hooks, state files and threads work: [docs/INTERNALS.md](docs/INTERNALS.md).
 
 See [CHANGELOG.md](CHANGELOG.md). Issues and pull requests welcome.
 

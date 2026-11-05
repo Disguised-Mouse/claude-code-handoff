@@ -101,7 +101,8 @@ handoff_dir() {
 # which follows every `cd` the model made in the Bash tool. The Stop hook therefore records
 # the session's cwd in .state/<sid8>.cwd, and skills resolve the project in this order:
 #   1. an explicit argument, 2. $CLAUDE_PROJECT_DIR, 3. the .cwd sidecar of this session found
-#   by walking up from $PWD (or in the handoff dir of $PWD), 4. $PWD.
+#   by walking up from $PWD (or in the handoff dir of $PWD, or with IN_PROJECT=false in any
+#   project folder under ~/.claude/handoffs), 4. $PWD.
 skill_project_dir() {
   local sid d p
   [ -n "${1:-}" ] && { printf '%s' "$1"; return; }
@@ -117,6 +118,13 @@ skill_project_dir() {
     done
     p="$(state_dir "$(handoff_dir "$PWD")")/${sid:0:8}.cwd"
     [ -s "$p" ] && { cat "$p"; return; }
+    # Central storage is keyed by the start directory, not $PWD: look in every project folder.
+    if is_false "${CLAUDE_HANDOFF_IN_PROJECT:-true}"; then
+      while IFS= read -r d; do
+        p="$d/.state/${sid:0:8}.cwd"
+        [ -s "$p" ] && { cat "$p"; return; }
+      done < <(all_project_dirs)
+    fi
   fi
   printf '%s' "$PWD"
 }

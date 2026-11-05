@@ -336,5 +336,11 @@ jq -nc --arg s "$M" --arg t "$T/m.jsonl" --arg c "$proj" '{session_id:$s, transc
 sm="$(CLAUDE_HANDOFF_DIR="$T/hd/" CLAUDE_CODE_SESSION_ID="$N" "$S/handoff-show.sh" --adopt 1 "$proj" 2>&1)"
 check "trailing slash in CLAUDE_HANDOFF_DIR: adopt joins" '! printf "%s" "$sm" | grep -q "not joined" && [ "$(cat "$T/hd/.state/56565656.adopt")" = "$M" ]'
 
+# ---- 19. IN_PROJECT=false, skill run after a cd: the session's start project, no stray folder --
+mkdir -p "$H/elsewhere"; before="$(ls "$H/.claude/handoffs" | wc -l | tr -d " ")"
+(cd "$H/elsewhere" && HOME="$H" CLAUDE_HANDOFF_IN_PROJECT=false CLAUDE_CODE_SESSION_ID="$E" "$S/handoff-list.sh" >/dev/null)
+sc="$(cd "$H/elsewhere" && HOME="$H" CLAUDE_HANDOFF_IN_PROJECT=false CLAUDE_CODE_SESSION_ID="$E" "$S/handoff-path.sh")"
+check "central storage after cd: skills find the start project, no new folder" '[ "$(ls "$H/.claude/handoffs" | wc -l | tr -d " ")" = "$before" ] && printf "%s" "$sc" | grep -q "_eeeeeeee.md"'
+
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" = 0 ]

@@ -61,7 +61,7 @@ Three words you will meet:
 
 At start, type the number. Later, `/handoff:list` to pick, `/handoff:load <n>` if you already know which.
 
-`/handoff:list`, `/handoff:status`, `/handoff:open` and `/handoff:load` without a number are answered by a hooks module (`hooks/instant.ts`) that runs the same scripts and opens the menu itself: no model turn, no tokens, and the output still reaches Claude. After a pick it runs `/handoff:load <n>`, which needs one turn. The module needs a Claude Code build with hooks modules (tested on 2.1.318); where it does not load or a hook fails, the skills answer as before.
+`/handoff:list`, `/handoff:status`, `/handoff:open` and `/handoff:load` without a number are answered by a hooks module (`hooks/instant.ts`) that runs the same scripts and opens the menu itself: no model turn, no tokens, and the output still reaches Claude. After a pick it runs `/handoff:load <n>`, which needs one turn. The module needs a Claude Code build with hooks modules (tested on 2.1.318); where a hook fails, the skills answer as before. Untested: whether a build without hooks modules ignores the `modules` key in `hooks/hooks.json` or rejects the file, which would also stop the shell hooks.
 
 ## The file
 

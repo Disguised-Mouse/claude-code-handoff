@@ -189,7 +189,7 @@ Every script accepts the hook's JSON on stdin, so they can be tested without a s
 jq -nc '{session_id:"abc", transcript_path:"/path/to/session.jsonl", cwd:"/path/to/project"}' | scripts/save-handoff.sh
 ```
 
-`tests/run.sh` runs 89 checks on synthetic fixtures in a temp directory (render stability, notes markers, retention guard, thread join, start screen, status line, secret scrubbing). The images in `docs/` are rendered from real plugin output with `docs/render-terminal.py`. How the hooks, state files and threads work: [docs/INTERNALS.md](docs/INTERNALS.md).
+`tests/run.sh` runs 108 checks on synthetic fixtures in a temp directory (render stability, notes markers, retention guard, thread join, start screen, status line, secret scrubbing). The images in `docs/` are rendered from real plugin output with `docs/render-terminal.py`. How the hooks, state files and threads work: [docs/INTERNALS.md](docs/INTERNALS.md).
 
 See [CHANGELOG.md](CHANGELOG.md). Issues and pull requests welcome.
 

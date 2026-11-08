@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.5 — 2026-11-08
+- The hooks module records the context window at the start of each main turn too, so the Stop hook ending the first turn after a `/model` switch uses the new model's window instead of the old one.
+- `record-window.sh` does nothing in headless sessions, like the other hooks, and exits non-zero when it cannot write, so the module logs the failure and retries.
+- `auto-notes.sh` checks the session id before reading the window file under it.
+
 ## 0.6.4 — 2026-11-08
 - Auto-notes: the recorded context window lives in `${XDG_STATE_HOME:-~/.local/state}/claude-code-handoff/windows/<session id>` instead of the project's `.state/`. The hooks module took the project from the session's cwd and the Stop hook from the transcript's first cwd; where those resolved to different projects, auto-notes missed the file and fell back to the 200k/1M guess.
 

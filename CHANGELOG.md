@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.6.4 — 2026-11-08
+- Auto-notes: the recorded context window lives in `${XDG_STATE_HOME:-~/.local/state}/claude-code-handoff/windows/<session id>` instead of the project's `.state/`. The hooks module took the project from the session's cwd and the Stop hook from the transcript's first cwd; where those resolved to different projects, auto-notes missed the file and fell back to the 200k/1M guess.
+
 ## 0.6.3 — 2026-11-07
 - Auto-notes: `CLAUDE_HANDOFF_CONTEXT_WINDOW=auto` (the default) uses the model's real context window, which the hooks module records in `.state/<session>.window` after each turn (`scripts/record-window.sh`); a number still sets it by hand. Before, unset meant 200k until a request passed 200k, so on a 1M model the percentages were five times too high until then.
 - INTERNALS: a status script of your own gets the nudges by piping into `statusline.sh`; `handoff-status.sh --short` has none.

@@ -39,7 +39,7 @@ if [ "$mode" = "context" ]; then
         | ((.input_tokens // 0) + (.cache_creation_input_tokens // 0) + (.cache_read_input_tokens // 0)) ]
         | "\(last // 0) \(max // 0)"' "$transcript" 2>/dev/null)"
   window="$(int_setting "${CLAUDE_HANDOFF_CONTEXT_WINDOW:-}" 0)"
-  [ "$window" -gt 0 ] || window="$(int_setting "$(cat "$(state_dir "$dir")/${sid:0:8}.window" 2>/dev/null)" 0)"
+  [ "$window" -gt 0 ] || window="$(int_setting "$(cat "$(window_file "$sid")" 2>/dev/null)" 0)"
   if [ "$window" -le 0 ]; then
     window=200000; [ "${maxctx:-0}" -gt 200000 ] 2>/dev/null && window=1000000
   fi

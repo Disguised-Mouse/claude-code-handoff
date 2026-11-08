@@ -10,7 +10,8 @@ How the plugin works, for people who want to read the code or wire it by hand. E
 | `PostCompact` | `scripts/save-compact.sh` | Stores `compact_summary` under `.state/<session>.compact.md` (wrapper tags stripped, inner headings demoted) and refreshes the file. |
 | `SessionStart` (`startup`, `clear`, `resume`, `fork`) | `scripts/load-handoff.sh` | Returns JSON: `additionalContext` for Claude (the compact handoff of the newest thread, the numbered list, one instruction) and `systemMessage` for the terminal (the list, the cache tip, the branch note). On `resume` and `fork` only a cost note, and only when Claude Code reports the cache as expired. Writes the numbered list to `.state/<session>.index` once, so the numbers stay valid even if other sessions write meanwhile. |
 | `SessionEnd` | `scripts/mark-closed.sh` | Removes the open mark, writes `.state/<session>.closed`; status follows the remaining sessions. |
-| `Stop` with `CLAUDE_HANDOFF_AUTO_NOTES` | `scripts/auto-notes.sh` | Keeps Claude going for one more step to rewrite the notes: at 60% and 85% of the context window (`context`) or every N turns. |
+| `Stop` with `CLAUDE_HANDOFF_AUTO_NOTES` | `scripts/auto-notes.sh` | Keeps Claude going for one more step to rewrite the notes: at 60% and 85% of the context window (`context`) or every N turns. The window is `CLAUDE_HANDOFF_CONTEXT_WINDOW` when it is a number; with `auto` (the default) it is the one `.state/<session>.window` holds, and before that file exists, 200k or 1M depending on the largest request in the transcript. |
+| `session.measure` (hooks module, after each turn) | `scripts/record-window.sh` | Writes the context window of the session's model to `.state/<session>.window` when it changes. Shell hooks never receive the window; only the status line and hooks modules do. |
 | Skills | `skills/*/SKILL.md` | `list`, `load`, `notes`, `status`, `open`. Read-only and write split: `status`, `list` and `handoff-path.sh` only read; `handoff-show.sh --adopt` (list, load) joins the thread and writes `.state/`; `open` launches the system opener; `notes` writes the sidecar through Claude's Write tool. Each skill's `allowed-tools` names exactly its scripts. Scripts find the current session through `CLAUDE_CODE_SESSION_ID`, which Claude Code sets for every shell it starts, and the project through the `.cwd` sidecar the Stop hook writes. |
 
 Hook output is capped by Claude Code at 10,000 characters per field; the start context stays under `CLAUDE_HANDOFF_CONTEXT_CHARS` (9,500) by shrinking its blocks.
@@ -29,6 +30,7 @@ Next to the files, in `.state/`:
 | `<root>.frozen.md` | snapshot of the last complete render of a thread, for the day a transcript is deleted |
 | `<session>.index` | the numbered list as it was printed at that session's start |
 | `<session>.auto-notes` | the last auto-notes threshold reached |
+| `<session>.window` | the context window of the session's model, in tokens |
 | `audit.log` | every delete, rename, join, failed render, lock timeout (trimmed past 2,000 lines) |
 
 ## Threads
@@ -53,7 +55,7 @@ handoff ● Rate limiter with Redis fallback (+1) · ctx 72% → /handoff:notes 
 handoff ○ after first reply · ctx 2%
 ```
 
-`(+N)` is the number of other sessions in the thread. The context percentage and the 5-hour / 7-day usage percentages reach only the status line, never hooks, so this is the one place the plugin can warn without spending a token. Thresholds: `CLAUDE_HANDOFF_NUDGE_CONTEXT` 70, `_NUDGE_LIMIT` 80, `_NUDGE_LIMIT_HARD` 95 ("notes now"), `_NUDGE_WEEK` 90; `0` disables one.
+`(+N)` is the number of other sessions in the thread. The context percentage and the 5-hour / 7-day usage percentages never reach shell hooks, so the status line is where the plugin warns without spending a token. Thresholds: `CLAUDE_HANDOFF_NUDGE_CONTEXT` 70, `_NUDGE_LIMIT` 80, `_NUDGE_LIMIT_HARD` 95 ("notes now"), `_NUDGE_WEEK` 90; `0` disables one.
 
 Use it as the status line:
 
@@ -63,7 +65,7 @@ Use it as the status line:
 
 The path comes from Claude Code's install record: cache folders are named after the plugin's commit, which do not sort by age, and older folders can stay in the cache.
 
-or, if you already have a status script, pipe the same JSON into `handoff-status.sh --short` from it and print the result as one more line.
+If you already have a status script, pipe the same JSON into `statusline.sh` from it and print the result as one more line. `handoff-status.sh --short` prints the title segment alone, without the context percentage and without the nudges; a script that shows those numbers itself can add the nudges from the `CLAUDE_HANDOFF_NUDGE_*` settings.
 
 ## Token accounting
 

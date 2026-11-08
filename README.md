@@ -108,7 +108,7 @@ Environment variables, in the `env` block of `~/.claude/settings.json` (all proj
 | `CLAUDE_HANDOFF_INDEX` | `5` | Sessions shown in the list at start. |
 | `CLAUDE_HANDOFF_CONTEXT_CHARS` | `9500` | Max characters given to Claude at start (Claude Code caps hook output at 10,000; blocks shrink to fit). |
 | `CLAUDE_HANDOFF_NUDGE_CONTEXT` / `_NUDGE_LIMIT` / `_NUDGE_LIMIT_HARD` / `_NUDGE_WEEK` | `70` / `80` / `95` / `90` | Status bar: context % for `→ /handoff:notes`; 5-hour usage % for the same; 5-hour % for `notes now`; 7-day % shown from. `0` disables one. |
-| `CLAUDE_HANDOFF_AUTO_NOTES_AT` / `_CONTEXT_WINDOW` | `60,85` / auto | Auto-notes thresholds; window size, 200k or 1M depending on the largest request seen. |
+| `CLAUDE_HANDOFF_AUTO_NOTES_AT` / `_CONTEXT_WINDOW` | `60,85` / `auto` | Auto-notes thresholds in % of the context window. Window: a number of tokens sets it by hand; `auto` uses the model's window as the hooks module records it after each turn, and until then 200k or 1M depending on the largest request seen. |
 | `CLAUDE_HANDOFF_RATE_READ` / `_RATE_WRITE` / `_RATE_OUTPUT` / `_PRICE_PER_M` | `0.025` / `2` / `5` / `10` | Factors of the Tokens table (cache read, cache write, output, USD per million input-equivalents). |
 | `CLAUDE_HANDOFF_COMPACT_CHARS` / `_LOAD_CHARS` | `3000` / `16000` | Max characters per block in `compact` mode; max in `full` mode. |
 | `CLAUDE_HANDOFF_COMPACT_SUMMARY_CHARS` | `6000` | Max characters of the compaction summary kept in the file. |
@@ -191,7 +191,7 @@ Every script accepts the hook's JSON on stdin, so they can be tested without a s
 jq -nc '{session_id:"abc", transcript_path:"/path/to/session.jsonl", cwd:"/path/to/project"}' | scripts/save-handoff.sh
 ```
 
-`tests/run.sh` runs 108 checks on synthetic fixtures in a temp directory (render stability, notes markers, retention guard, thread join, start screen, status line, secret scrubbing). `claude plugin test .` runs the hooks module's tests (`tests/instant.test.ts`). The images in `docs/` are rendered from real plugin output with `docs/render-terminal.py`. How the hooks, state files and threads work: [docs/INTERNALS.md](docs/INTERNALS.md).
+`tests/run.sh` runs 113 checks on synthetic fixtures in a temp directory (render stability, notes markers, retention guard, thread join, start screen, status line, secret scrubbing). `claude plugin test .` runs the hooks module's tests (`tests/instant.test.ts`). The images in `docs/` are rendered from real plugin output with `docs/render-terminal.py`. How the hooks, state files and threads work: [docs/INTERNALS.md](docs/INTERNALS.md).
 
 See [CHANGELOG.md](CHANGELOG.md). Issues and pull requests welcome.
 

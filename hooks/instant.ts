@@ -81,4 +81,19 @@ export const register: Register = on => {
   }))
 
   on('command.run', { command: 'handoff:open' }, async $ => ({ text: await script($, 'handoff-open.sh', []) }))
+
+  // Shell hooks never receive the model's context window; auto-notes reads it from this sidecar.
+  let recorded = ''
+  on('session.measure', async ($, e, next) => {
+    const w = e.context.window
+    const key = `${await $.session.id()}:${w}`
+    if (w > 0 && key !== recorded) {
+      recorded = key
+      await script($, 'record-window.sh', [await $.session.cwd(), String(w)]).catch(err => {
+        recorded = ''
+        $.ui.log(`handoff: recording the context window failed: ${String(err)}`)
+      })
+    }
+    return next(e)
+  })
 }

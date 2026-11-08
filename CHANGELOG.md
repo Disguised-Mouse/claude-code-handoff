@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.3 — 2026-11-07
+- Auto-notes: `CLAUDE_HANDOFF_CONTEXT_WINDOW=auto` (the default) uses the model's real context window, which the hooks module records in `.state/<session>.window` after each turn (`scripts/record-window.sh`); a number still sets it by hand. Before, unset meant 200k until a request passed 200k, so on a 1M model the percentages were five times too high until then.
+- INTERNALS: a status script of your own gets the nudges by piping into `statusline.sh`; `handoff-status.sh --short` has none.
+
 ## 0.6.2 — 2026-10-16
 - Skills declare `allowed-tools` for their own scripts only, so `/handoff:list`, `load`, `status`, `open` and the path lookup of `notes` run without a permission prompt in the default mode. Writing the notes file still asks once: Claude Code treats `.claude/` as a protected directory and a skill cannot lift that.
 

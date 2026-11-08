@@ -3,7 +3,8 @@
 # more step, updating the notes of the handoff:
 #   context   when the context crosses 60% and then 85% of the window, once per threshold,
 #             re-armed after a compaction (CLAUDE_HANDOFF_AUTO_NOTES_AT="60,85",
-#             CLAUDE_HANDOFF_CONTEXT_WINDOW=200000). The notes are fresh when compaction comes.
+#             CLAUDE_HANDOFF_CONTEXT_WINDOW=auto or a number of tokens). The notes are fresh
+#             when compaction comes.
 #   N         every N user turns.
 # That step is a normal model turn and costs tokens, which is why it is off by default.
 set -uo pipefail
@@ -32,12 +33,13 @@ last=0; [ -f "$state" ] && last="$(int_setting "$(cat "$state")" 0)"
 why=""
 if [ "$mode" = "context" ]; then
   # Context of the last request = what the next one re-sends; percent of the model's window.
-  # Window: the setting, else derived from the transcript (a request above 200k means the
-  # model runs with the 1M window).
+  # Window: a number in the setting; with auto (or unset) the model's window as the hooks module
+  # recorded it; else derived from the transcript (a request above 200k means the 1M window).
   read -r ctx maxctx <<< "$(jq -rs '[ .[] | select(.type == "assistant" and .message.usage != null) | .message.usage
         | ((.input_tokens // 0) + (.cache_creation_input_tokens // 0) + (.cache_read_input_tokens // 0)) ]
         | "\(last // 0) \(max // 0)"' "$transcript" 2>/dev/null)"
   window="$(int_setting "${CLAUDE_HANDOFF_CONTEXT_WINDOW:-}" 0)"
+  [ "$window" -gt 0 ] || window="$(int_setting "$(cat "$(state_dir "$dir")/${sid:0:8}.window" 2>/dev/null)" 0)"
   if [ "$window" -le 0 ]; then
     window=200000; [ "${maxctx:-0}" -gt 200000 ] 2>/dev/null && window=1000000
   fi

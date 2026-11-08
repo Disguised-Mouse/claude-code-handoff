@@ -101,7 +101,19 @@ ctxt 300000; an1="$(jq -nc --arg s "$A" --arg t "$T/ctx.jsonl" --arg c "$proj" '
 check "auto-notes: 300k request implies the 1M window (30%, quiet)" '[ -z "$an1" ]'
 ctxt 700000; an1="$(jq -nc --arg s "$A" --arg t "$T/ctx.jsonl" --arg c "$proj" '{session_id:$s, transcript_path:$t, cwd:$c}' | CLAUDE_HANDOFF_AUTO_NOTES=context "$S/auto-notes.sh")"
 check "auto-notes: 700k of 1M fires at 70%" 'printf "%s" "$an1" | jq -e ".reason | test(\"70%\")" >/dev/null'
-rm -f "$dir/.state/aaaaaaaa.auto-notes" "$T/ctx.jsonl"
+rm -f "$dir/.state/aaaaaaaa.auto-notes"
+# Window recorded by the hooks module: used with auto, a number in the setting wins over it.
+CLAUDE_CODE_SESSION_ID="$A" "$S/record-window.sh" "$proj" 1000000
+check "record-window: sidecar written" '[ "$(cat "$dir/.state/aaaaaaaa.window")" = 1000000 ]'
+CLAUDE_CODE_SESSION_ID="$A" "$S/record-window.sh" "$proj" "1M"
+CLAUDE_CODE_SESSION_ID="not-a-session" "$S/record-window.sh" "$proj" 5
+check "record-window: bad window or session id ignored" '[ "$(cat "$dir/.state/aaaaaaaa.window")" = 1000000 ] && [ ! -f "$dir/.state/not-a-se.window" ]'
+anw() { jq -nc --arg s "$A" --arg t "$T/ctx.jsonl" --arg c "$proj" '{session_id:$s, transcript_path:$t, cwd:$c}' | CLAUDE_HANDOFF_AUTO_NOTES=context CLAUDE_HANDOFF_AUTO_NOTES_AT=25,40 CLAUDE_HANDOFF_CONTEXT_WINDOW="$1" "$S/auto-notes.sh"; }
+ctxt 150000; check "auto-notes: auto uses the recorded 1M window (15%, quiet)" '[ -z "$(anw auto)" ]'
+ctxt 260000; check "auto-notes: auto fires at 26% of the recorded window" 'anw auto | jq -e ".reason | test(\"26%\")" >/dev/null'
+rm -f "$dir/.state/aaaaaaaa.auto-notes"
+ctxt 150000; check "auto-notes: a number overrides the recorded window (75%)" 'anw 200000 | jq -e ".reason | test(\"75%\")" >/dev/null'
+rm -f "$dir/.state/aaaaaaaa.auto-notes" "$dir/.state/aaaaaaaa.window" "$T/ctx.jsonl"
 check "User turns counts the array prompt" 'grep -q "^- User turns: 2$" "$fa"'
 check "array prompt text shown" 'grep -q "second request with a picture" "$fa"'
 check "AWS secret redacted" '! grep -q "abcdefgh1234" "$fa"'

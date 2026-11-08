@@ -120,14 +120,10 @@ for (const [why, setup] of [
 
 test('a measurement records the context window once per session and window', async ($, on) => {
   const ran = engine(on, '')
-  on('session.cwd', () => ({ value: '/work/project' }))
   on('session.measure', () => ({ changed: [] }))
   const measure = (window: number) => $.session.measure({ context: { window }, rateLimits: [], changed: [] } as never)
   await measure(1000000)
   await measure(1000000)
   await measure(200000)
-  expect(ran.map(r => r.argv)).toEqual([
-    ['/work/project', '1000000'],
-    ['/work/project', '200000'],
-  ])
+  expect(ran.map(r => r.argv)).toEqual([['1000000'], ['200000']])
 })

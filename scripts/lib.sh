@@ -335,12 +335,16 @@ valid_sid() {
 #   .state/<sid8>.transcript  transcript path of that session (written by the Stop hook)
 #   .state/<sid8>.cwd         the session's project directory (written by the Stop hook)
 #   .state/<sid8>.index       the numbered list this session was last shown (for /handoff:load <n>)
-#   .state/<sid8>.window      context window of the session's model (written by the hooks module)
 #   .state/<root8>.notes.md   the notes block of the thread (source of truth)
 #   .state/<root8>.lock/      held while the thread's file is rendered
 #   .state/audit.log          one line per delete / rename / adopt of a handoff file
 
 state_dir() { printf '%s/.state' "$1"; }
+
+# window_file <session id> -> where the hooks module records the context window of the session's
+# model. Keyed by the full id outside every project, so the module and the Stop hook find the same
+# file without resolving the project the same way.
+window_file() { printf '%s/claude-code-handoff/windows/%s' "${XDG_STATE_HOME:-$HOME/.local/state}" "$1"; }
 
 # thread_root <dir> <session id> -> full id of the root of the thread this session belongs to
 thread_root() {

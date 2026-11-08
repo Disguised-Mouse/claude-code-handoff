@@ -110,10 +110,20 @@ check "record-window: written by session id, wherever it runs" '[ "$(cat "$wf")"
 CLAUDE_CODE_SESSION_ID="$A" "$S/record-window.sh" "1M"
 CLAUDE_CODE_SESSION_ID="not-a-session" "$S/record-window.sh" 5
 check "record-window: bad window or session id ignored" '[ "$(cat "$wf")" = 1000000 ] && [ "$(ls "$XDG_STATE_HOME/claude-code-handoff/windows" | wc -l)" = 1 ]'
+CLAUDE_CODE_SESSION_ATTENDED=0 CLAUDE_CODE_SESSION_ID="$C" "$S/record-window.sh" 1000000
+check "record-window: headless session writes nothing" '[ ! -f "$XDG_STATE_HOME/claude-code-handoff/windows/$C" ]'
+mkdir -p "$T/ro" && chmod 500 "$T/ro"
+rw_rc=0; XDG_STATE_HOME="$T/ro" CLAUDE_CODE_SESSION_ID="$A" "$S/record-window.sh" 1000000 2>/dev/null || rw_rc=$?
+chmod 700 "$T/ro"
+check "record-window: unwritable state dir exits non-zero" '[ "$rw_rc" -ne 0 ]'
 anw() { jq -nc --arg s "$A" --arg t "$T/ctx.jsonl" --arg c "$proj" '{session_id:$s, transcript_path:$t, cwd:$c}' | CLAUDE_HANDOFF_AUTO_NOTES=context CLAUDE_HANDOFF_AUTO_NOTES_AT=25,40 CLAUDE_HANDOFF_CONTEXT_WINDOW="$1" "$S/auto-notes.sh"; }
 ctxt 150000; check "auto-notes: auto uses the recorded 1M window (15%, quiet)" '[ -z "$(anw auto)" ]'
 ctxt 260000; check "auto-notes: auto fires at 26% of the recorded window" 'anw auto | jq -e ".reason | test(\"26%\")" >/dev/null'
 rm -f "$dir/.state/aaaaaaaa.auto-notes"
+mkdir -p "$XDG_STATE_HOME/claude-code-handoff" && printf '1000000' > "$XDG_STATE_HOME/claude-code-handoff/bad"
+ctxt 150000; anb="$(jq -nc --arg t "$T/ctx.jsonl" --arg c "$proj" '{session_id:"../bad", transcript_path:$t, cwd:$c}' | CLAUDE_HANDOFF_AUTO_NOTES=context CLAUDE_HANDOFF_AUTO_NOTES_AT=25,40 "$S/auto-notes.sh" 2>/dev/null)"
+check "auto-notes: an invalid session id is not used as a path" '[ "$(cat "$XDG_STATE_HOME/claude-code-handoff/bad")" = 1000000 ] && ! printf "%s" "$anb" | grep -q "15%"'
+rm -f "$XDG_STATE_HOME/claude-code-handoff/bad"
 ctxt 150000; check "auto-notes: a number overrides the recorded window (75%)" 'anw 200000 | jq -e ".reason | test(\"75%\")" >/dev/null'
 rm -f "$dir/.state/aaaaaaaa.auto-notes" "$wf" "$T/ctx.jsonl"
 check "User turns counts the array prompt" 'grep -q "^- User turns: 2$" "$fa"'

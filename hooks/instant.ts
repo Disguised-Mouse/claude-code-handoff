@@ -38,6 +38,18 @@ async function script($: EngineInterface, name: string, args: string[]) {
   return [r.stdout.trimEnd(), r.stderr.trimEnd()].filter(Boolean).join('\n')
 }
 
+// Shell hooks never receive the model's context window; auto-notes reads what this records.
+let recorded = ''
+async function record($: EngineInterface, w: number) {
+  const key = `${await $.session.id()}:${w}`
+  if (!(w > 0) || key === recorded) return
+  recorded = key
+  await script($, 'record-window.sh', [String(w)]).catch(err => {
+    recorded = ''
+    $.ui.log(`handoff: recording the context window failed: ${String(err)}`)
+  })
+}
+
 async function listAndPick($: EngineInterface, here: boolean) {
   let out = here ? '' : await script($, 'handoff-list.sh', ['--all'])
   if (!out) out = await script($, 'handoff-list.sh', [])
@@ -82,18 +94,14 @@ export const register: Register = on => {
 
   on('command.run', { command: 'handoff:open' }, async $ => ({ text: await script($, 'handoff-open.sh', []) }))
 
-  // Shell hooks never receive the model's context window; auto-notes reads what this records.
-  let recorded = ''
+  // At the start of each main turn, so the Stop hook ending that turn reads the window of the
+  // model it ran on, a /model switch included; the measurement after the turn is the backstop.
+  on('turn.start', async ($, e, next) => {
+    if (e.agentId === undefined) await record($, (await $.session.usage()).context.window)
+    return next(e)
+  })
   on('session.measure', async ($, e, next) => {
-    const w = e.context.window
-    const key = `${await $.session.id()}:${w}`
-    if (w > 0 && key !== recorded) {
-      recorded = key
-      await script($, 'record-window.sh', [String(w)]).catch(err => {
-        recorded = ''
-        $.ui.log(`handoff: recording the context window failed: ${String(err)}`)
-      })
-    }
+    await record($, e.context.window)
     return next(e)
   })
 }

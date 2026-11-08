@@ -127,3 +127,15 @@ test('a measurement records the context window once per session and window', asy
   await measure(200000)
   expect(ran.map(r => r.argv)).toEqual([['1000000'], ['200000']])
 })
+
+test('a main turn records the window before it runs; a subagent turn does not', async ($, on) => {
+  const ran = engine(on, '')
+  let window = 1000000
+  on('session.usage', () => ({ value: { context: { window } } as never }))
+  on('turn.start', (_, e) => ({ turnId: e.turnId }))
+  await $.turn.start({ text: 'q', turnId: 't1' })
+  window = 200000
+  await $.turn.start({ text: '', turnId: 't2', agentId: 'sub' })
+  await $.turn.start({ text: 'q', turnId: 't3' })
+  expect(ran.map(r => r.argv)).toEqual([['1000000'], ['200000']])
+})

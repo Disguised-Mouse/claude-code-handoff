@@ -75,6 +75,8 @@ notes="$(notes_sidecar "$dir" "$root")"
 # Recorded only now: on a session's first Stop the async writer may not have made the file yet,
 # and a threshold marked done without the request being sent would never fire again.
 mkdir -p "$(dirname "$state")" && printf '%s' "$next" > "$state"
-jq -nc --arg f "$notes" --arg w "$why" '{decision: "block",
-  reason: ("Handoff plugin, notes update (" + $w + "): rewrite " + $f + " with current notes (Goal, Done, In progress, Decisions, Rejected, Open questions, Next action with file:line or the exact command, Next steps, Gotchas; under 60 lines; plain markdown, no marker lines, never secrets). The handoff file shows it on the next render. Then stop without further commentary.")}'
+# additionalContext, not decision "block": the turn continues the same way, but Claude Code shows
+# it as "Stop hook feedback" instead of a hook error.
+jq -nc --arg f "$notes" --arg w "$why" '{hookSpecificOutput: {hookEventName: "Stop",
+  additionalContext: ("Handoff plugin, notes update (" + $w + "): rewrite " + $f + " with current notes (Goal, Done, In progress, Decisions, Rejected, Open questions, Next action with file:line or the exact command, Next steps, Gotchas; under 60 lines; plain markdown, no marker lines, never secrets). The handoff file shows it on the next render. Then stop without further commentary.")}}'
 exit 0

@@ -87,11 +87,11 @@ ctxt() { printf '%s\n' '{"type":"user","sessionId":"'"$A"'","timestamp":"2026-01
 an() { jq -nc --arg s "$A" --arg t "$T/ctx.jsonl" --arg c "$proj" '{session_id:$s, transcript_path:$t, cwd:$c}' | CLAUDE_HANDOFF_AUTO_NOTES=context CLAUDE_HANDOFF_CONTEXT_WINDOW=200000 "$S/auto-notes.sh"; }
 rm -f "$dir/.state/aaaaaaaa.auto-notes"
 ctxt 50000;  check "auto-notes: quiet at 25%" '[ -z "$(an)" ]'
-ctxt 130000; check "auto-notes: fires at 65%" 'an | jq -e ".decision == \"block\"" >/dev/null'
+ctxt 130000; check "auto-notes: fires at 65%" 'an | jq -e ".hookSpecificOutput.hookEventName == \"Stop\" and (has(\"decision\") | not)" >/dev/null'
 ctxt 140000; check "auto-notes: not again at 70%" '[ -z "$(an)" ]'
-ctxt 175000; check "auto-notes: fires at 87%" 'an | jq -e ".reason | test(\"87%\")" >/dev/null'
+ctxt 175000; check "auto-notes: fires at 87%" 'an | jq -e ".hookSpecificOutput.additionalContext | test(\"87%\")" >/dev/null'
 ctxt 30000;  check "auto-notes: re-armed below 60% after compaction" '[ -z "$(an)" ] && [ "$(cat "$dir/.state/aaaaaaaa.auto-notes")" = 0 ]'
-ctxt 125000; check "auto-notes: fires again at 62%" 'an | jq -e ".decision == \"block\"" >/dev/null'
+ctxt 125000; check "auto-notes: fires again at 62%" 'an | jq -e ".hookSpecificOutput.hookEventName == \"Stop\" and (has(\"decision\") | not)" >/dev/null'
 rm -f "$dir/.state/aaaaaaaa.auto-notes"
 # First Stop of a session: the async writer has not made its file yet; the threshold stays open.
 G="99999999-7777-4777-8777-777777777777"
@@ -101,7 +101,7 @@ check "auto-notes: no file yet -> quiet, threshold not used up" '[ -z "$ag" ] &&
 ctxt 300000; an1="$(jq -nc --arg s "$A" --arg t "$T/ctx.jsonl" --arg c "$proj" '{session_id:$s, transcript_path:$t, cwd:$c}' | CLAUDE_HANDOFF_AUTO_NOTES=context "$S/auto-notes.sh")"
 check "auto-notes: 300k request implies the 1M window (30%, quiet)" '[ -z "$an1" ]'
 ctxt 700000; an1="$(jq -nc --arg s "$A" --arg t "$T/ctx.jsonl" --arg c "$proj" '{session_id:$s, transcript_path:$t, cwd:$c}' | CLAUDE_HANDOFF_AUTO_NOTES=context "$S/auto-notes.sh")"
-check "auto-notes: 700k of 1M fires at 70%" 'printf "%s" "$an1" | jq -e ".reason | test(\"70%\")" >/dev/null'
+check "auto-notes: 700k of 1M fires at 70%" 'printf "%s" "$an1" | jq -e ".hookSpecificOutput.additionalContext | test(\"70%\")" >/dev/null'
 rm -f "$dir/.state/aaaaaaaa.auto-notes"
 # Window recorded by the hooks module: used with auto, a number in the setting wins over it.
 wf="$XDG_STATE_HOME/claude-code-handoff/windows/$A"
@@ -118,13 +118,13 @@ chmod 700 "$T/ro"
 check "record-window: unwritable state dir exits non-zero" '[ "$rw_rc" -ne 0 ]'
 anw() { jq -nc --arg s "$A" --arg t "$T/ctx.jsonl" --arg c "$proj" '{session_id:$s, transcript_path:$t, cwd:$c}' | CLAUDE_HANDOFF_AUTO_NOTES=context CLAUDE_HANDOFF_AUTO_NOTES_AT=25,40 CLAUDE_HANDOFF_CONTEXT_WINDOW="$1" "$S/auto-notes.sh"; }
 ctxt 150000; check "auto-notes: auto uses the recorded 1M window (15%, quiet)" '[ -z "$(anw auto)" ]'
-ctxt 260000; check "auto-notes: auto fires at 26% of the recorded window" 'anw auto | jq -e ".reason | test(\"26%\")" >/dev/null'
+ctxt 260000; check "auto-notes: auto fires at 26% of the recorded window" 'anw auto | jq -e ".hookSpecificOutput.additionalContext | test(\"26%\")" >/dev/null'
 rm -f "$dir/.state/aaaaaaaa.auto-notes"
 mkdir -p "$XDG_STATE_HOME/claude-code-handoff" && printf '1000000' > "$XDG_STATE_HOME/claude-code-handoff/bad"
 ctxt 150000; anb="$(jq -nc --arg t "$T/ctx.jsonl" --arg c "$proj" '{session_id:"../bad", transcript_path:$t, cwd:$c}' | CLAUDE_HANDOFF_AUTO_NOTES=context CLAUDE_HANDOFF_AUTO_NOTES_AT=25,40 "$S/auto-notes.sh" 2>/dev/null)"
 check "auto-notes: an invalid session id is not used as a path" '[ "$(cat "$XDG_STATE_HOME/claude-code-handoff/bad")" = 1000000 ] && ! printf "%s" "$anb" | grep -q "15%"'
 rm -f "$XDG_STATE_HOME/claude-code-handoff/bad"
-ctxt 150000; check "auto-notes: a number overrides the recorded window (75%)" 'anw 200000 | jq -e ".reason | test(\"75%\")" >/dev/null'
+ctxt 150000; check "auto-notes: a number overrides the recorded window (75%)" 'anw 200000 | jq -e ".hookSpecificOutput.additionalContext | test(\"75%\")" >/dev/null'
 rm -f "$dir/.state/aaaaaaaa.auto-notes" "$wf" "$T/ctx.jsonl"
 check "User turns counts the array prompt" 'grep -q "^- User turns: 2$" "$fa"'
 check "array prompt text shown" 'grep -q "second request with a picture" "$fa"'

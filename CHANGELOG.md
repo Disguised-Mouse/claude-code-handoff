@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.6.6 — 2026-11-08
+- Auto-notes asks for the notes through `hookSpecificOutput.additionalContext` instead of `decision: "block"`. The turn continues the same way, with the same loop protections, but the terminal shows `Stop hook feedback` instead of `Stop hook error`.
+
 ## 0.6.5 — 2026-11-08
 - The hooks module records the context window at the start of each main turn too, so the Stop hook ending the first turn after a `/model` switch uses the new model's window instead of the old one.
 - `record-window.sh` does nothing in headless sessions, like the other hooks, and exits non-zero when it cannot write, so the module logs the failure and retries.

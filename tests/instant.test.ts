@@ -10,15 +10,15 @@ const LIST = [row(1, 'Cswap concurrent account sessions'), row(2, 'Control-model
 test('rows, menu options and the picked number', () => {
   const rows = parseRows(`Continue a session?\n${LIST}\n`)
   expect(rows.map(r => r.n)).toEqual(['1', '2'])
-  expect(rows[1]?.label).toBe('2. Control-model  step 3 build')
+  expect(rows[1]?.label).toBe('2. Control-model  step 3 build · 0 min · ~ · ● open')
   expect(menuOptions(rows)).toEqual([
-    '1. Cswap concurrent account sessions',
-    '2. Control-model  step 3 build',
+    '1. Cswap concurrent account sessions · 0 min · ~ · ● open',
+    '2. Control-model  step 3 build · 0 min · ~ · ● open',
     'Keep the current context',
   ])
   const twelve = parseRows(Array.from({ length: 12 }, (_, i) => row(i + 1, `T${i + 1}`)).join('\n'))
   expect(twelve.map(r => r.n).slice(-3)).toEqual(['10', '11', '12'])
-  expect(twelve[11]?.label).toBe('12. T12')
+  expect(twelve[11]?.label).toBe('12. T12 · 0 min · ~ · ● open')
   expect(menuOptions(twelve)).toHaveLength(4)
   expect(pickedNumber('2. Control-model step 3 build')).toBe('2')
   expect(pickedNumber('load 3')).toBe('3')

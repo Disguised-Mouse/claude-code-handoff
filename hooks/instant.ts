@@ -59,6 +59,8 @@ async function listAndPick($: EngineInterface, here: boolean) {
   let out = here ? '' : await script($, 'handoff-list.sh', ['--all'])
   if (!out) out = await script($, 'handoff-list.sh', [])
   if (!out) return { text: 'No handoff exists yet.' }
+  // The host prefixes the text with "handoff: ", which would push the first row out of its column.
+  out = '\n' + out
 
   const rows = parseRows(out)
   let answer: string

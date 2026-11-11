@@ -6,17 +6,19 @@ const KEEP = 'Keep the current context'
 
 export type Row = { n: string; label: string }
 
-// handoff-list.sh prints `%-2s %s  age  [path  ]tail` with the title padded to 40, so the title sits
-// at columns 3-43 and the other columns follow, split by 2+ spaces. ui.ask takes labels only, so
+// handoff-list.sh prints `%-2s %s  age  [path  ]tail` with the title padded to 40, so the title is the
+// 40 characters after the number and the other columns follow, split by 2+ spaces. ui.ask takes labels only, so
 // the label carries every column.
 export function parseRows(out: string): Row[] {
   return out
     .split('\n')
     .filter(line => /^\d+ /.test(line))
     .map(line => {
-      const n = line.slice(0, 3).trim()
-      const rest = line.slice(43).trim().split(/\s{2,}/)
-      return { n, label: [`${n}. ${line.slice(3, 43).trim()}`, ...rest].join(' · ') }
+      // By code points, as the script pads; the number column grows past 2 digits.
+      const n = line.match(/^\d+/)![0]
+      const chars = [...line].slice(Math.max(2, n.length) + 1)
+      const rest = chars.slice(40).join('').trim().split(/\s{2,}/)
+      return { n, label: [`${n}. ${chars.slice(0, 40).join('').trim()}`, ...rest].join(' · ') }
     })
 }
 

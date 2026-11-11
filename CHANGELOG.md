@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- `/handoff:list` menu: each option's label carries the age, project and next step, which the hooks-module menu dropped, and the title is no longer cut a second time. Numbers of 3 digits and titles with emoji are split correctly.
+
 ## 0.6.6 — 2026-11-08
 - Auto-notes asks for the notes through `hookSpecificOutput.additionalContext` instead of `decision: "block"`. The turn continues the same way, with the same loop protections, but the terminal shows `Stop hook feedback` instead of `Stop hook error`.
 

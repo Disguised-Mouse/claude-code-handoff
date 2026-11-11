@@ -1,7 +1,29 @@
 # Changelog
 
-## Unreleased
-- `/handoff:list` menu: each option's label carries the age, project and next step, which the hooks-module menu dropped, and the title is no longer cut a second time. Numbers of 3 digits and titles with emoji are split correctly.
+## 0.6.7 — 2026-11-11
+
+### Commands
+- `/handoff:list`, `status`, `open` and a bare `load` are answered by a hooks module (`hooks/instant.ts`) that runs the scripts and opens the menu itself, so they cost no model turn. A pick queues `/handoff:load <n>` after the hook returns. When the module fails, the skills answer as before.
+- `/handoff:list` menu: each option's label carries the age, project and next step, which the module's first menu dropped, and the title is no longer cut a second time. Numbers of 3 digits and titles with emoji are split correctly.
+- `handoff-list.sh --all` lists every project, newest first, with a project column; `/handoff:list` uses it by default, and `/handoff:list here` or an empty `--all` result gives this project only. It includes this project's own folder and stops at the newest 30 rows.
+- Loading another project's handoff shows the file without joining it, and says where to continue it; joining would split the thread, because this session's hooks write to their own project's folder.
+
+### Handoff file
+- Interrupts (`[Request interrupted by user]`) end the turn without counting as requests or turns. The reply cut off by the interrupt is recorded with a note that it was interrupted.
+- Notices Claude Code writes itself (`<synthetic>` rows such as "No response requested.", "Login expired", usage-limit notices) are no longer taken as Claude's reply, also when they arrive as `last_assistant_message`.
+- The last reply is no longer listed twice, as "Last reply" and as the newest earlier reply.
+- Hooks file a session under the project it started in, not under every directory a `cd` took it to. `hook_cwd` reads only up to the first cwd of the transcript (4 ms on a 60 MB transcript instead of reading multi-MB lines on every Stop).
+
+### Storage and install
+- Skills find the session's project after a `cd` when `CLAUDE_HANDOFF_IN_PROJECT=false`, so `list` and `load` use the same folder.
+- A trailing slash in `CLAUDE_HANDOFF_DIR` no longer makes the project's own sessions show as "not joined".
+- `plugin.json` has no fixed version, so every merged commit installs as an update with `claude plugin update`. INTERNALS reads the status line path from `installed_plugins.json` instead of sorting the commit-named cache folders.
+
+### Auto-notes
+- A context threshold (or turn count) stays open until the notes request is sent. Before, a session's first Stop, before the async `save-handoff.sh` had written the file, used the threshold up without asking, which hit every long session already past 60% at install.
+
+### Tests
+- The test harness clears every `CLAUDE_HANDOFF_*` setting by prefix; settings exported from a Claude Code session broke 8 start and resume checks.
 
 ## 0.6.6 — 2026-11-08
 - Auto-notes asks for the notes through `hookSpecificOutput.additionalContext` instead of `decision: "block"`. The turn continues the same way, with the same loop protections, but the terminal shows `Stop hook feedback` instead of `Stop hook error`.

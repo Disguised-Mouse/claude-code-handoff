@@ -54,7 +54,7 @@ handoff ● Rate limiter with Redis fallback (+1) · ctx 72% → /handoff:notes 
 handoff ○ after first reply · ctx 2%
 ```
 
-`(+N)` is the number of other sessions in the thread. The context percentage and the 5-hour / 7-day usage percentages never reach shell hooks, so the status line is where the plugin warns without spending a token. Thresholds: `CLAUDE_HANDOFF_NUDGE_CONTEXT` 70, `_NUDGE_LIMIT` 80, `_NUDGE_LIMIT_HARD` 95 ("notes now"), `_NUDGE_WEEK` 90; `0` disables one.
+`(+N)` is the number of other sessions in the thread. The context percentage and the 5-hour / 7-day usage percentages never reach shell hooks, so the status line is where the plugin warns without spending a token. Thresholds: `CLAUDE_HANDOFF_NUDGE_CONTEXT` 70, `_NUDGE_LIMIT` 80, `_NUDGE_LIMIT_HARD` 95 ("notes now"), `_NUDGE_WEEK` 90 (7-day number shown, `→ /handoff:notes`), `_NUDGE_WEEK_HARD` 95 ("notes now"); `0` disables one. Each usage reminder sits beside its own number. With both windows at their hard level the 5-hour number has no reminder and the 7-day number says "notes now!".
 
 Use it as the status line:
 

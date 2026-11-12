@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Status bar
+- The 7-day limit now nudges like the 5-hour one: `→ /handoff:notes` from `CLAUDE_HANDOFF_NUDGE_WEEK` (90, before: number only) and `notes now` from the new `CLAUDE_HANDOFF_NUDGE_WEEK_HARD` (95). Each reminder sits beside its own number. With both windows at their hard level the 5-hour number has no reminder and the 7-day number says `notes now!`.
+
 ## 0.6.7 — 2026-11-11
 
 ### Commands

@@ -68,7 +68,11 @@ check "statusline: notes nudge at 70% context" 'printf "%s" "$sl" | grep -q "ctx
 check "statusline: soft nudge at 91% of the 5-hour limit" 'printf "%s" "$sl" | grep -q "5h 91% → /handoff:notes"'
 check "statusline: title, no path" 'printf "%s" "$sl" | grep -q "^handoff ● Test thread: one/two" && ! printf "%s" "$sl" | grep -q "$dir"'
 sl="$(jq -nc --arg s "$A" --arg c "$proj" '{session_id:$s, cwd:$c, rate_limits:{five_hour:{used_percentage:96}, seven_day:{used_percentage:92}}}' | "$S/statusline.sh")"
-check "statusline: hard nudge at 96% and the 7-day limit" 'printf "%s" "$sl" | grep -q "5h 96% → notes now · 7d 92%"'
+check "statusline: 5h hard nudge, 7d soft nudge" 'printf "%s" "$sl" | grep -q "5h 96% → notes now · 7d 92% → /handoff:notes"'
+sl="$(jq -nc --arg s "$A" --arg c "$proj" '{session_id:$s, cwd:$c, rate_limits:{five_hour:{used_percentage:10}, seven_day:{used_percentage:96}}}' | "$S/statusline.sh")"
+check "statusline: 7d hard nudge alone" 'printf "%s" "$sl" | grep -q "7d 96% → notes now$"'
+sl="$(jq -nc --arg s "$A" --arg c "$proj" '{session_id:$s, cwd:$c, rate_limits:{five_hour:{used_percentage:96}, seven_day:{used_percentage:96}}}' | "$S/statusline.sh")"
+check "statusline: both at hard level, one message beside 7d" 'printf "%s" "$sl" | grep -q "5h 96% · 7d 96% → notes now!"'
 sl="$(CLAUDE_CODE_SESSION_ID="$B" jq -nc --arg s "$A" --arg c "$proj" '{session_id:$s, cwd:$c}' | CLAUDE_CODE_SESSION_ID="$B" "$S/statusline.sh")"
 check "statusline: stdin session id wins over a stale environment" 'printf "%s" "$sl" | grep -q "Test thread"'
 sl="$(jq -nc --arg c "$proj" '{session_id:"99999999-9999-4999-8999-999999999999", cwd:$c}' | "$S/statusline.sh")"
